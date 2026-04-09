@@ -4,6 +4,7 @@ export const COLORS = {
   colombiaRed: '#CE1126',
   pitchGreen: '#2D5A27',
   pitchGreenLight: '#3A7D32',
+  pitchGreenDark: '#1A3A1A',
   pitchLines: '#FFFFFF',
   gold: '#FFD700',
   darkBg: '#0A1628',
@@ -42,3 +43,29 @@ export const MONTHS_TO_MINUTES: Record<string, number> = {
 
 export const CURRENT_MONTH = 'Abril';
 export const CURRENT_YEAR = 2025;
+
+export const POSITION_MAP: Record<string, { x: string; y: string }> = {
+  Portero:                    { x: '50%', y: '92%' },
+  Defensa_Izq:                { x: '15%', y: '78%' },
+  Defensa_CentroIzq:          { x: '38%', y: '78%' },
+  Defensa_CentroDer:          { x: '62%', y: '78%' },
+  Defensa_Der:                { x: '85%', y: '78%' },
+  Mediocampo_Izq:             { x: '12%', y: '64%' },
+  Mediocampo_CentroIzq:       { x: '37%', y: '64%' },
+  Mediocampo_CentroDer:       { x: '63%', y: '64%' },
+  Mediocampo_Der:             { x: '88%', y: '64%' },
+  Mediocampo_OfensivoIzq:     { x: '25%', y: '52%' },
+  Mediocampo_OfensivoCentro:  { x: '50%', y: '52%' },
+  Mediocampo_OfensivoDer:     { x: '75%', y: '52%' },
+  Enganche_Izq:               { x: '12%', y: '40%' },
+  Enganche_CentroIzq:         { x: '37%', y: '40%' },
+  Enganche_CentroDer:         { x: '63%', y: '40%' },
+  Enganche_Der:               { x: '88%', y: '40%' },
+  Extremo_Izq:                { x: '10%', y: '27%' },
+  Delantero_InteriorIzq:      { x: '35%', y: '27%' },
+  Delantero_InteriorDer:      { x: '65%', y: '27%' },
+  Extremo_Der:                { x: '90%', y: '27%' },
+  Delantero_Izq:              { x: '25%', y: '14%' },
+  Delantero_Centro:           { x: '50%', y: '14%' },
+  Delantero_Der:              { x: '75%', y: '14%' },
+};

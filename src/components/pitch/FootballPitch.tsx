@@ -1,169 +1,227 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Player } from '../../types';
 import { PlayerCard } from './PlayerCard';
 import { CoachBadge } from './CoachBadge';
 import { OwnerBadge } from './OwnerBadge';
+import { POSITION_MAP } from '../../utils/constants';
 
 interface Props {
   alineacion: Player[];
 }
 
-// Posiciones relativas en la cancha [x%, y%]
-const POSITION_MAP: Record<string, [number, number]> = {
-  Portero: [50, 88],
-  Defensa_Izq: [12, 70],
-  Defensa_CentroIzq: [33, 70],
-  Defensa_CentroDer: [57, 70],
-  Defensa_Der: [84, 70],
-  Mediocampo_Izq: [12, 52],
-  Mediocampo_Centro: [50, 52],
-  Mediocampo_Der: [84, 52],
-  Mediocampo_OfensivoIzq: [22, 34],
-  Mediocampo_OfensivoCentro: [50, 34],
-  Mediocampo_OfensivoDer: [76, 34],
-  Delantero_Izq: [20, 14],
-  Delantero_Centro: [50, 14],
-  Delantero_Der: [80, 14],
-};
-
+// ── SVG Cancha (top-down, landscape 3:2, ataque de abajo→arriba) ──────────────
 function PitchSVG() {
+  // viewBox: 900 × 600  (3:2)
+  // Pitch inset: x=25, y=20, w=850, h=560
+  const PX = 25, PY = 20, PW = 850, PH = 560;
+  const cx = PX + PW / 2;
+  const midY = PY + PH / 2;
+
+  // Grass stripes (horizontal, 10 stripes)
+  const stripeH = PH / 10;
+  const stripes = Array.from({ length: 10 }, (_, i) => ({
+    y: PY + i * stripeH,
+    fill: i % 2 === 0 ? '#2D5A27' : '#3A7D32',
+  }));
+
+  // Penalty areas (top = ataque / bottom = defensa)
+  const paW = 340, paH = 105;
+  const saW = 150, saH = 55;
+  const goalW = 100, goalH = 14;
+
+  // Bottom (portero/defensa)
+  const paBottomX = cx - paW / 2;
+  const paBottomY = PY + PH - paH;
+  const saBottomX = cx - saW / 2;
+  const saBottomY = PY + PH - saH;
+  const penBottomY = PY + PH - 88;
+
+  // Top (ataque/delanteros)
+  const paTopX = cx - paW / 2;
+  const paTopY = PY;
+  const saTopX = cx - saW / 2;
+  const saTopY = PY;
+  const penTopY = PY + 88;
+
   return (
     <svg
-      viewBox="0 0 400 550"
+      viewBox="0 0 900 600"
       className="absolute inset-0 w-full h-full"
       preserveAspectRatio="xMidYMid slice"
+      style={{ borderRadius: 8 }}
     >
-      {/* Fondo de la cancha */}
-      <defs>
-        <pattern id="grass" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-          <rect width="40" height="40" fill="#2D5A27" />
-          <rect width="40" height="20" fill="#3A7D32" />
-        </pattern>
-      </defs>
-      <rect width="400" height="550" fill="url(#grass)" rx="4" />
+      {/* Background */}
+      <rect width="900" height="600" fill="#1A3A1A" />
 
-      {/* Líneas del campo */}
-      <g stroke="#FFFFFF" strokeWidth="2" fill="none" opacity="0.7">
-        {/* Borde */}
-        <rect x="20" y="20" width="360" height="510" rx="2" />
-        {/* Línea de medio campo */}
-        <line x1="20" y1="275" x2="380" y2="275" />
-        {/* Círculo central */}
-        <circle cx="200" cy="275" r="50" />
-        <circle cx="200" cy="275" r="3" fill="#FFFFFF" />
+      {/* Grass stripes */}
+      {stripes.map((s, i) => (
+        <rect key={i} x={PX} y={s.y} width={PW} height={stripeH + 0.5} fill={s.fill} />
+      ))}
 
-        {/* Área grande local (abajo) */}
-        <rect x="90" y="430" width="220" height="100" />
-        {/* Área pequeña local */}
-        <rect x="145" y="470" width="110" height="60" />
-        {/* Punto penal local */}
-        <circle cx="200" cy="460" r="3" fill="#FFFFFF" />
+      {/* Lines */}
+      <g stroke="#FFFFFF" strokeWidth="1.8" fill="none" opacity="0.85">
+        {/* Outer boundary */}
+        <rect x={PX} y={PY} width={PW} height={PH} />
 
-        {/* Área grande visitante (arriba) */}
-        <rect x="90" y="20" width="220" height="100" />
-        {/* Área pequeña visitante */}
-        <rect x="145" y="20" width="110" height="60" />
-        {/* Punto penal visitante */}
-        <circle cx="200" cy="90" r="3" fill="#FFFFFF" />
+        {/* Halfway line */}
+        <line x1={PX} y1={midY} x2={PX + PW} y2={midY} />
 
-        {/* Portería local */}
-        <rect x="165" y="528" width="70" height="14" />
-        {/* Portería visitante */}
-        <rect x="165" y="8" width="70" height="14" />
+        {/* Center circle + dot */}
+        <circle cx={cx} cy={midY} r={52} />
+        <circle cx={cx} cy={midY} r={3} fill="#FFFFFF" stroke="none" />
+
+        {/* ── Bottom (portero) area ── */}
+        <rect x={paBottomX} y={paBottomY} width={paW} height={paH} />
+        <rect x={saBottomX} y={saBottomY} width={saW} height={saH} />
+        <circle cx={cx} cy={penBottomY} r={3} fill="#FFFFFF" stroke="none" />
+        {/* Penalty arc */}
+        <path
+          d={`M ${paBottomX} ${paBottomY} A 55 55 0 0 0 ${paBottomX + paW} ${paBottomY}`}
+          strokeDasharray="0"
+          fill="none"
+        />
+
+        {/* ── Top (ataque) area ── */}
+        <rect x={paTopX} y={paTopY} width={paW} height={paH} />
+        <rect x={saTopX} y={saTopY} width={saW} height={saH} />
+        <circle cx={cx} cy={penTopY} r={3} fill="#FFFFFF" stroke="none" />
+
+        {/* Corner arcs */}
+        <path d={`M ${PX} ${PY + 12} A 12 12 0 0 1 ${PX + 12} ${PY}`} />
+        <path d={`M ${PX + PW - 12} ${PY} A 12 12 0 0 1 ${PX + PW} ${PY + 12}`} />
+        <path d={`M ${PX} ${PY + PH - 12} A 12 12 0 0 0 ${PX + 12} ${PY + PH}`} />
+        <path d={`M ${PX + PW - 12} ${PY + PH} A 12 12 0 0 0 ${PX + PW} ${PY + PH - 12}`} />
+      </g>
+
+      {/* Goals (porterías) — rendered outside pitch lines as reference */}
+      <g fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
+        {/* Bottom goal */}
+        <rect x={cx - goalW / 2} y={PY + PH} width={goalW} height={goalH} rx="2" />
+        {/* Top goal */}
+        <rect x={cx - goalW / 2} y={PY - goalH} width={goalW} height={goalH} rx="2" />
       </g>
     </svg>
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function FootballPitch({ alineacion }: Props) {
-  const titulares = alineacion.filter(p => p.rol === 'Titular' && !p.posicionCancha.startsWith('Banca'));
-  const banca = alineacion.filter(p => p.posicionCancha.startsWith('Banca'));
+  const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
+
+  const titulares = alineacion.filter(p => p.rol === 'Titular');
   const coach = alineacion.find(p => p.rol === 'Profe');
   const owner = alineacion.find(p => p.rol === 'Dueña del Club');
+
+  // Validate positions and warn on mismatches
+  const playersOnPitch = titulares.map(player => {
+    const pos = POSITION_MAP[player.posicionCancha];
+    if (!pos) {
+      console.warn(
+        `[FootballPitch] posicionCancha desconocida: "${player.posicionCancha}" para ${player.nombre}. ` +
+          `Usando fallback Portero.`
+      );
+    }
+    return { player, pos: pos ?? POSITION_MAP['Portero'] };
+  });
+
+  const handleActivate = (id: number) => setActivePlayerId(id);
+  const handleDeactivate = () => setActivePlayerId(null);
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay: 0.55 }}
-      className="w-full max-w-3xl mx-auto px-4"
+      className="w-full max-w-5xl mx-auto px-3 sm:px-6"
     >
-      <div
-        className="rounded-2xl overflow-hidden"
+      {/* ── Título ── */}
+      <h2
+        className="text-center mb-4"
         style={{
-          border: '2px solid #003893',
-          boxShadow: '0 0 40px rgba(0,56,147,0.3), 0 8px 32px rgba(0,0,0,0.5)',
+          fontFamily: 'Oswald, sans-serif',
+          fontWeight: 700,
+          fontSize: 'clamp(1.25rem, 3vw, 2rem)',
+          color: '#FCD116',
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          textShadow: '0 2px 12px rgba(252,209,22,0.3)',
         }}
       >
-        {/* Header de la sección */}
-        <div
-          className="px-6 py-3 flex items-center justify-between"
-          style={{ background: 'rgba(0,56,147,0.8)', borderBottom: '1px solid rgba(0,56,147,0.4)' }}
-        >
-          <span className="text-sm font-bold uppercase tracking-widest" style={{ color: '#FCD116' }}>
-            ⚽ Alineación — SPI Americas
-          </span>
-          <span className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Formación 4-3-3
-          </span>
+        ⚽ La Selección SPI
+      </h2>
+
+      {/* ── Owner: centrado encima de todo ── */}
+      {owner && (
+        <div className="flex justify-center mb-4">
+          <OwnerBadge owner={owner} />
         </div>
+      )}
+
+      {/* ── Fila principal: Coach | Cancha ── */}
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+        {/* CoachBadge — a la izquierda en desktop, centrado arriba en mobile */}
+        {coach && (
+          <div className="flex-shrink-0 md:self-center">
+            <CoachBadge coach={coach} />
+          </div>
+        )}
 
         {/* Cancha */}
-        <div className="relative" style={{ paddingBottom: '138%' }}>
-          <PitchSVG />
-
-          {/* Jugadores titulares sobre la cancha */}
-          {titulares.map((player, i) => {
-            const pos = POSITION_MAP[player.posicionCancha];
-            if (!pos) return null;
-            const [x, y] = pos;
-            return (
-              <div
-                key={player.id}
-                className="absolute"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: 2,
-                }}
-              >
-                <PlayerCard player={player} index={i} />
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Banca de suplentes */}
         <div
-          className="px-4 py-4"
+          className="flex-1 w-full"
           style={{
-            background: 'rgba(10,22,40,0.95)',
-            borderTop: '1px solid rgba(0,56,147,0.4)',
+            borderRadius: 12,
+            border: '3px solid #1A3A1A',
+            boxShadow: '0 0 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,56,147,0.1)',
+            overflow: 'visible',
           }}
         >
-          <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Banca de Suplentes
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            {banca.map((player, i) => (
-              <PlayerCard key={player.id} player={player} index={titulares.length + i} />
+          {/* aspect-ratio 3:2 */}
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              paddingBottom: '66.67%',
+              borderRadius: 10,
+              overflow: 'hidden',
+            }}
+          >
+            <PitchSVG />
+
+            {/* Jugadores */}
+            {playersOnPitch.map(({ player, pos }, i) => (
+              <div
+                key={player.id}
+                style={{
+                  position: 'absolute',
+                  left: pos.x,
+                  top: pos.y,
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: activePlayerId === player.id ? 50 : 2,
+                }}
+              >
+                <PlayerCard
+                  player={player}
+                  index={i}
+                  isActive={activePlayerId === player.id}
+                  onActivate={handleActivate}
+                  onDeactivate={handleDeactivate}
+                />
+              </div>
             ))}
           </div>
         </div>
-
-        {/* Zona técnica y palco VIP */}
-        <div
-          className="px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3"
-          style={{
-            background: 'rgba(0,56,147,0.15)',
-            borderTop: '1px solid rgba(252,209,22,0.15)',
-          }}
-        >
-          {coach && <CoachBadge coach={coach} />}
-          {owner && <OwnerBadge owner={owner} />}
-        </div>
       </div>
+
+      {/* Mensaje de refuerzo */}
+      <p
+        className="text-center mt-3 text-xs uppercase tracking-widest font-bold"
+        style={{ color: 'rgba(252,209,22,0.45)' }}
+      >
+        Todos en cancha · Todos titulares · 23/23
+      </p>
     </motion.section>
   );
 }

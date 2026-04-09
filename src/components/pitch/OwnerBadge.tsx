@@ -1,65 +1,127 @@
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
 import { Player } from '../../types';
+import { PlayerImage } from './PlayerImage';
+import { COLORS } from '../../utils/constants';
 
 interface Props {
   owner: Player;
 }
 
+// Shimmer that travels around the border via background-position
+function ShimmerBorder() {
+  return (
+    <motion.div
+      style={{
+        position: 'absolute',
+        inset: -2,
+        borderRadius: 16,
+        background:
+          'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.6) 40%, rgba(255,255,255,0.8) 50%, rgba(255,215,0,0.6) 60%, transparent 100%)',
+        backgroundSize: '200% 100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.6,
+        maskImage:
+          'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+        maskComposite: 'exclude',
+        WebkitMaskImage:
+          'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
+        WebkitMaskComposite: 'xor',
+        padding: 2,
+      }}
+      animate={{ backgroundPosition: ['200% 0%', '-200% 0%'] }}
+      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+    />
+  );
+}
+
 export function OwnerBadge({ owner }: Props) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.9 }}
       whileHover={{ scale: 1.05 }}
-      className="flex items-center gap-3 cursor-pointer"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
+        cursor: 'pointer',
+      }}
     >
-      <div
-        className="rounded-xl p-3 flex items-center gap-3"
-        style={{
-          background: 'linear-gradient(135deg, rgba(252,209,22,0.15) 0%, rgba(26,42,74,0.8) 100%)',
-          border: '2px solid #FCD116',
-          boxShadow: '0 0 20px rgba(252,209,22,0.25)',
-        }}
+      {/* Corona flotante */}
+      <motion.div
+        animate={{ y: [0, -4, 0] }}
+        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        {/* Corona animada */}
-        <motion.div
-          animate={{ y: [0, -3, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="flex-shrink-0"
-        >
-          <Crown size={20} color="#FCD116" fill="#FCD116" />
-        </motion.div>
+        <Crown size={22} color={COLORS.gold} fill={COLORS.gold} />
+      </motion.div>
 
-        <div>
-          {/* Badge Dueña */}
-          <div
-            className="inline-block text-[9px] font-black px-2 py-0.5 rounded-full mb-1 uppercase tracking-widest"
-            style={{ background: 'linear-gradient(90deg, #FCD116, #FFD700)', color: '#0A1628' }}
-          >
-            Dueña del Club
-          </div>
-          <p className="text-sm font-black leading-none" style={{ color: '#FFFFFF' }}>
-            {owner.nombre}
-          </p>
-          <p className="text-xs font-semibold" style={{ color: '#FCD116' }}>
-            "{owner.apodo}"
-          </p>
-        </div>
-
-        {/* Avatar owner */}
+      {/* Badge */}
+      <div style={{ position: 'relative' }}>
+        <ShimmerBorder />
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
           style={{
-            background: owner.urlFoto
-              ? `url(${owner.urlFoto}) center/cover`
-              : 'linear-gradient(135deg, #FCD116, #FFD700)',
-            border: '2px solid #FCD116',
-            boxShadow: '0 0 12px rgba(252,209,22,0.4)',
+            background: 'linear-gradient(135deg, #1A2A4A 0%, #0A1628 100%)',
+            border: `3px solid ${COLORS.gold}`,
+            borderRadius: 14,
+            padding: '10px 14px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            position: 'relative',
+            zIndex: 1,
+            boxShadow: `0 0 24px rgba(255,215,0,0.25), 0 4px 20px rgba(0,0,0,0.5)`,
           }}
         >
-          {!owner.urlFoto && '👑'}
+          {/* Foto */}
+          <div
+            style={{
+              borderRadius: '50%',
+              border: `2px solid ${COLORS.gold}`,
+              boxShadow: '0 0 12px rgba(255,215,0,0.4)',
+              lineHeight: 0,
+            }}
+          >
+            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={42} />
+          </div>
+
+          {/* Textos */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span
+              style={{
+                color: COLORS.gold,
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Presidenta del Club
+            </span>
+            <p
+              style={{
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: 12,
+                lineHeight: 1.2,
+              }}
+            >
+              {owner.nombre}
+            </p>
+            <p
+              style={{
+                color: COLORS.gold,
+                fontStyle: 'italic',
+                fontSize: 10,
+              }}
+            >
+              "{owner.apodo}"
+            </p>
+          </div>
         </div>
       </div>
     </motion.div>
