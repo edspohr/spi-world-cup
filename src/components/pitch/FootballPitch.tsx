@@ -89,9 +89,17 @@ export function FootballPitch({ alineacion }: Props) {
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const [breathingIds, setBreathingIds] = useState<Set<number>>(new Set());
 
-  const titulares = alineacion.filter(p => p.rol === 'Titular');
-  const coach     = alineacion.find(p => p.rol === 'Profe');
-  const owner     = alineacion.find(p => p.rol === 'Dueña del Club');
+  const coach =
+    alineacion.find(p => p.rol === 'Profe') ??
+    alineacion.find(p => p.posicionCancha === 'Director_Tecnico');
+  const owner =
+    alineacion.find(p => p.rol === 'Dueña del Club') ??
+    alineacion.find(p => p.posicionCancha === 'Palco_VIP');
+
+  const coachOrOwnerIds = new Set([coach?.id, owner?.id].filter(Boolean) as number[]);
+  const titulares = alineacion.filter(
+    p => p.rol === 'Titular' && !coachOrOwnerIds.has(p.id)
+  );
 
   let overflowIndex = 0;
   const playersOnPitch = titulares.map(player => {

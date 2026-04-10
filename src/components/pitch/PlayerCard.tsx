@@ -1,8 +1,21 @@
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useLayoutEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Player } from '../../types';
 import { PlayerImage } from './PlayerImage';
 import { COLORS } from '../../utils/constants';
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < 768);
+    window.addEventListener('resize', fn, { passive: true });
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return mobile;
+}
 
 interface Props {
   player: Player;
@@ -13,6 +26,49 @@ interface Props {
   onDeactivate: () => void;
 }
 
+interface FixedPos {
+  top: number;
+  left: number;
+  arrowUp: boolean;
+}
+
+const POPOVER_W = 162;
+const POPOVER_H = 230;
+
+function PopoverContent({ player }: { player: Player }) {
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+        <div style={{
+          borderRadius: '50%',
+          border: `2px solid ${COLORS.gold}`,
+          boxShadow: '0 0 12px rgba(255,215,0,0.4)',
+          overflow: 'hidden',
+        }}>
+          <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={72} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+        <span style={{
+          background: COLORS.gold, color: COLORS.darkBg, borderRadius: 20,
+          padding: '1px 8px', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 13,
+        }}>
+          #{player.numero}
+        </span>
+      </div>
+      <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 11, textAlign: 'center', lineHeight: 1.2, marginBottom: 2 }}>
+        {player.nombre}
+      </p>
+      <p style={{ color: COLORS.colombiaYellow, fontStyle: 'italic', fontSize: 10, textAlign: 'center', marginBottom: 3 }}>
+        "{player.apodo}"
+      </p>
+      <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {player.posicionCancha.replace(/_/g, ' ')}
+      </p>
+    </>
+  );
+}
+
 export const PlayerCard = memo(function PlayerCard({
   player,
   index,
@@ -21,11 +77,34 @@ export const PlayerCard = memo(function PlayerCard({
   onActivate,
   onDeactivate,
 }: Props) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const cardRef   = useRef<HTMLDivElement>(null);
+  const circleRef = useRef<HTMLDivElement>(null);
+  const [fixedPos, setFixedPos] = useState<FixedPos | null>(null);
 
+  // Compute viewport-clamped fixed position for desktop popover
+  useLayoutEffect(() => {
+    if (!isActive || isMobile) {
+      setFixedPos(null);
+      return;
+    }
+    if (!circleRef.current) return;
+    const rect = circleRef.current.getBoundingClientRect();
+    const PAD = 10;
+    let left = rect.left + rect.width / 2 - POPOVER_W / 2;
+    let top  = rect.top - POPOVER_H - 10;
+    let arrowUp = false;
+    if (top < PAD) { top = rect.bottom + 10; arrowUp = true; }
+    if (left < PAD) left = PAD;
+    else if (left + POPOVER_W > window.innerWidth - PAD) left = window.innerWidth - PAD - POPOVER_W;
+    setFixedPos({ top, left, arrowUp });
+  }, [isActive, isMobile]);
+
+  // Click/touch outside (desktop only — mobile uses overlay)
   useEffect(() => {
     if (!isActive) return;
     function handler(e: MouseEvent | TouchEvent) {
+      if (isMobile) return;
       if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
         onDeactivate();
       }
@@ -41,148 +120,186 @@ export const PlayerCard = memo(function PlayerCard({
       document.removeEventListener('touchstart', handler);
       document.removeEventListener('keydown', onKey);
     };
-  }, [isActive, onDeactivate]);
+  }, [isActive, isMobile, onDeactivate]);
 
   return (
-    /* Breathing wrapper */
-    <motion.div
-      animate={isBreathing && !isActive ? { scale: [1, 1.025, 1] } : { scale: 1 }}
-      transition={
-        isBreathing && !isActive
-          ? { duration: 2.6, repeat: Infinity, ease: 'easeInOut' }
-          : { duration: 0.3 }
-      }
-      style={{ willChange: 'transform' }}
-    >
-      {/* Entry animation wrapper */}
-      <motion.div
-        ref={cardRef}
-        initial={{ scale: 0, y: 15, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        transition={{
-          type: 'spring',
-          stiffness: 260,
-          damping: 20,
-          delay: 0.04 * index,
-        }}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 3,
-          cursor: 'pointer',
-          position: 'relative',
-          zIndex: isActive ? 50 : 2,
-          willChange: 'transform, opacity',
-        }}
-        onClick={() => (isActive ? onDeactivate() : onActivate(player.id))}
-        whileTap={{ scale: 0.92 }}
-      >
-        {/* Popover */}
+    <>
+      {/* ── Mobile: overlay + bottom sheet ───────────────────────────────────── */}
+      {isMobile && createPortal(
         <AnimatePresence>
           {isActive && (
+            <>
+              <motion.div
+                key="mob-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={onDeactivate}
+                style={{
+                  position: 'fixed', inset: 0,
+                  background: 'rgba(0,0,0,0.58)',
+                  backdropFilter: 'blur(2px)',
+                  zIndex: 200,
+                }}
+              />
+              <motion.div
+                key="mob-sheet"
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+                style={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0,
+                  background: '#1A2A4A',
+                  borderTop: `2px solid ${COLORS.gold}`,
+                  borderRadius: '20px 20px 0 0',
+                  padding: '16px 24px 36px',
+                  zIndex: 201,
+                  boxShadow: '0 -8px 40px rgba(0,0,0,0.65)',
+                }}
+              >
+                {/* Grab handle */}
+                <div style={{
+                  width: 40, height: 4, borderRadius: 2,
+                  background: 'rgba(255,255,255,0.2)',
+                  margin: '0 auto 16px',
+                }} />
+                <PopoverContent player={player} />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* ── Desktop: fixed portal popover ────────────────────────────────────── */}
+      {!isMobile && createPortal(
+        <AnimatePresence>
+          {isActive && fixedPos && (
             <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 10 }}
+              key={`pop-${player.id}`}
+              initial={{ scale: 0.85, opacity: 0, y: fixedPos.arrowUp ? -8 : 8 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 10 }}
+              exit={{ scale: 0.85, opacity: 0, y: fixedPos.arrowUp ? -8 : 8 }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
               style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                marginBottom: 8,
+                position: 'fixed',
+                top: fixedPos.top,
+                left: fixedPos.left,
+                width: POPOVER_W,
                 background: '#1A2A4A',
                 border: '1px solid #FFD700',
                 borderRadius: 12,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.75), 0 0 24px rgba(255,215,0,0.2)',
                 padding: '10px 12px',
-                minWidth: 134,
-                zIndex: 100,
+                zIndex: 9999,
                 pointerEvents: 'none',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+              <PopoverContent player={player} />
+              {fixedPos.arrowUp ? (
                 <div style={{
-                  borderRadius: '50%',
-                  border: `2px solid ${COLORS.gold}`,
-                  boxShadow: '0 0 12px rgba(255,215,0,0.4)',
-                  overflow: 'hidden',
-                }}>
-                  <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={72} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-                <span style={{
-                  background: COLORS.gold, color: COLORS.darkBg, borderRadius: 20,
-                  padding: '1px 8px', fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 13,
-                }}>
-                  #{player.numero}
-                </span>
-              </div>
-              <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 11, textAlign: 'center', lineHeight: 1.2, marginBottom: 2 }}>
-                {player.nombre}
-              </p>
-              <p style={{ color: COLORS.colombiaYellow, fontStyle: 'italic', fontSize: 10, textAlign: 'center', marginBottom: 3 }}>
-                "{player.apodo}"
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 9, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {player.posicionCancha.replace(/_/g, ' ')}
-              </p>
-              {/* Flecha */}
-              <div style={{
-                position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
-                width: 0, height: 0,
-                borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #FFD700',
-              }} />
+                  position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)',
+                  width: 0, height: 0,
+                  borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+                  borderBottom: '6px solid #FFD700',
+                }} />
+              ) : (
+                <div style={{
+                  position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+                  width: 0, height: 0,
+                  borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+                  borderTop: '6px solid #FFD700',
+                }} />
+              )}
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
-        {/* Círculo del jugador */}
+      {/* ── Player token ─────────────────────────────────────────────────────── */}
+      <motion.div
+        animate={isBreathing && !isActive ? { scale: [1, 1.025, 1] } : { scale: 1 }}
+        transition={
+          isBreathing && !isActive
+            ? { duration: 2.6, repeat: Infinity, ease: 'easeInOut' }
+            : { duration: 0.3 }
+        }
+        style={{ willChange: 'transform' }}
+      >
         <motion.div
-          animate={{ scale: isActive ? 1.35 : 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          style={{ position: 'relative', willChange: 'transform' }}
+          ref={cardRef}
+          initial={{ scale: 0, y: 15, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          transition={{
+            type: 'spring',
+            stiffness: 260,
+            damping: 20,
+            delay: 0.04 * index,
+          }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 3,
+            cursor: 'pointer',
+            position: 'relative',
+            zIndex: isActive ? 50 : 2,
+            willChange: 'transform, opacity',
+          }}
+          onClick={() => (isActive ? onDeactivate() : onActivate(player.id))}
+          whileTap={{ scale: 0.92 }}
         >
-          <div style={{
-            borderRadius: '50%',
-            border: `2px solid ${COLORS.gold}`,
-            boxShadow: isActive ? `0 0 18px rgba(255,215,0,0.7)` : `0 0 8px rgba(255,215,0,0.3)`,
-            overflow: 'hidden',
-            lineHeight: 0,
-          }}>
-            <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={44} />
-          </div>
-          {/* Badge número */}
-          <div style={{
-            position: 'absolute', top: -4, right: -4,
-            width: 18, height: 18, borderRadius: '50%',
-            background: COLORS.colombiaRed, border: '1.5px solid #0A1628',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
-          }}>
-            <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 8, color: '#FFFFFF', lineHeight: 1 }}>
-              {player.numero}
-            </span>
-          </div>
-        </motion.div>
+          {/* Círculo */}
+          <motion.div
+            animate={{ scale: isActive ? 1.35 : 1 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            style={{ position: 'relative', willChange: 'transform' }}
+          >
+            <div
+              ref={circleRef}
+              style={{
+                borderRadius: '50%',
+                border: `2px solid ${COLORS.gold}`,
+                boxShadow: isActive ? `0 0 18px rgba(255,215,0,0.7)` : `0 0 8px rgba(255,215,0,0.3)`,
+                overflow: 'hidden',
+                lineHeight: 0,
+              }}
+            >
+              <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={44} />
+            </div>
+            {/* Número badge */}
+            <div style={{
+              position: 'absolute', top: -4, right: -4,
+              width: 18, height: 18, borderRadius: '50%',
+              background: COLORS.colombiaRed, border: '1.5px solid #0A1628',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
+            }}>
+              <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 8, color: '#FFFFFF', lineHeight: 1 }}>
+                {player.numero}
+              </span>
+            </div>
+          </motion.div>
 
-        {/* Apodo — solo desktop */}
-        <p className="hidden sm:block" style={{
-          fontSize: 9,
-          color: '#FFFFFF',
-          textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
-          textAlign: 'center',
-          maxWidth: 52,
-          lineHeight: 1.1,
-          fontWeight: 600,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {player.apodo}
-        </p>
+          {/* Apodo — solo desktop */}
+          <p className="hidden sm:block" style={{
+            fontSize: 9,
+            color: '#FFFFFF',
+            textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
+            textAlign: 'center',
+            maxWidth: 52,
+            lineHeight: 1.1,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {player.apodo}
+          </p>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 });

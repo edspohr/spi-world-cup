@@ -8,7 +8,6 @@ interface Props {
   owner: Player;
 }
 
-// Shimmer that travels around the border via background-position
 function ShimmerBorder() {
   return (
     <motion.div
@@ -17,11 +16,10 @@ function ShimmerBorder() {
         inset: -2,
         borderRadius: 16,
         background:
-          'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.6) 40%, rgba(255,255,255,0.8) 50%, rgba(255,215,0,0.6) 60%, transparent 100%)',
+          'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.8) 35%, rgba(255,255,255,1) 50%, rgba(255,215,0,0.8) 65%, transparent 100%)',
         backgroundSize: '200% 100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.6,
         maskImage:
           'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)',
         maskComposite: 'exclude',
@@ -31,7 +29,7 @@ function ShimmerBorder() {
         padding: 2,
       }}
       animate={{ backgroundPosition: ['200% 0%', '-200% 0%'] }}
-      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+      transition={{ duration: 2.2, repeat: Infinity, ease: 'linear' }}
     />
   );
 }
@@ -48,15 +46,26 @@ export function OwnerBadge({ owner }: Props) {
         flexDirection: 'column',
         alignItems: 'center',
         gap: 6,
-        cursor: 'pointer',
+        cursor: 'default',
       }}
     >
+      {/* Etiqueta VIP */}
+      <p style={{
+        color: 'rgba(252,209,22,0.65)',
+        fontSize: 9,
+        fontWeight: 800,
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+      }}>
+        ⭐ VIP Palco ⭐
+      </p>
+
       {/* Corona flotante */}
       <motion.div
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <Crown size={22} color={COLORS.gold} fill={COLORS.gold} />
+        <Crown size={24} color={COLORS.gold} fill={COLORS.gold} />
       </motion.div>
 
       {/* Badge */}
@@ -64,17 +73,18 @@ export function OwnerBadge({ owner }: Props) {
         <ShimmerBorder />
         <div
           style={{
-            background: 'linear-gradient(135deg, #1A2A4A 0%, #0A1628 100%)',
+            background: 'linear-gradient(135deg, #1E2F50 0%, #0A1628 100%)',
             border: `3px solid ${COLORS.gold}`,
             borderRadius: 14,
-            padding: '10px 14px',
+            padding: '10px 16px',
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 10,
+            gap: 12,
             position: 'relative',
             zIndex: 1,
-            boxShadow: `0 0 24px rgba(255,215,0,0.25), 0 4px 20px rgba(0,0,0,0.5)`,
+            minWidth: 200,
+            boxShadow: `0 0 32px rgba(255,215,0,0.3), 0 4px 20px rgba(0,0,0,0.5)`,
           }}
         >
           {/* Foto */}
@@ -82,43 +92,29 @@ export function OwnerBadge({ owner }: Props) {
             style={{
               borderRadius: '50%',
               border: `2px solid ${COLORS.gold}`,
-              boxShadow: '0 0 12px rgba(255,215,0,0.4)',
+              boxShadow: '0 0 16px rgba(255,215,0,0.5)',
               lineHeight: 0,
+              flexShrink: 0,
             }}
           >
-            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={42} />
+            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={46} />
           </div>
 
           {/* Textos */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span
-              style={{
-                color: COLORS.gold,
-                fontSize: 9,
-                fontWeight: 800,
-                letterSpacing: '0.1em',
-                textTransform: 'uppercase',
-              }}
-            >
+            <span style={{
+              color: COLORS.gold,
+              fontSize: 9,
+              fontWeight: 800,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
               Presidenta del Club
             </span>
-            <p
-              style={{
-                color: '#FFFFFF',
-                fontWeight: 700,
-                fontSize: 12,
-                lineHeight: 1.2,
-              }}
-            >
+            <p style={{ color: '#FFFFFF', fontWeight: 700, fontSize: 13, lineHeight: 1.2 }}>
               {owner.nombre}
             </p>
-            <p
-              style={{
-                color: COLORS.gold,
-                fontStyle: 'italic',
-                fontSize: 10,
-              }}
-            >
+            <p style={{ color: COLORS.gold, fontStyle: 'italic', fontSize: 10 }}>
               "{owner.apodo}"
             </p>
           </div>

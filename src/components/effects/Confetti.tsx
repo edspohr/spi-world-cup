@@ -45,14 +45,15 @@ function borderRadius(shape: Shape) {
 
 interface Props {
   show: boolean;
+  count?: number;
 }
 
-export const Confetti = memo(function Confetti({ show }: Props) {
-  const piecesRef = useRef<ConfettiPiece[]>(generatePieces(60));
+export const Confetti = memo(function Confetti({ show, count = 60 }: Props) {
+  const piecesRef = useRef<ConfettiPiece[]>(generatePieces(count));
 
   useEffect(() => {
-    if (show) piecesRef.current = generatePieces(60);
-  }, [show]);
+    if (show) piecesRef.current = generatePieces(count);
+  }, [show, count]);
 
   return (
     <AnimatePresence>
