@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Player } from '../../types';
 import { PlayerCard } from './PlayerCard';
@@ -10,39 +10,16 @@ interface Props {
   alineacion: Player[];
 }
 
-// ── SVG Cancha (top-down, landscape 3:2, ataque de abajo→arriba) ──────────────
-function PitchSVG() {
-  // viewBox: 900 × 600  (3:2)
-  // Pitch inset: x=25, y=20, w=850, h=560
+// ── SVG Cancha (top-down, landscape 3:2) ──────────────────────────────────────
+const PitchSVG = memo(function PitchSVG() {
   const PX = 25, PY = 20, PW = 850, PH = 560;
   const cx = PX + PW / 2;
   const midY = PY + PH / 2;
-
-  // Grass stripes (horizontal, 10 stripes)
   const stripeH = PH / 10;
-  const stripes = Array.from({ length: 10 }, (_, i) => ({
-    y: PY + i * stripeH,
-    fill: i % 2 === 0 ? '#2D5A27' : '#3A7D32',
-  }));
 
-  // Penalty areas (top = ataque / bottom = defensa)
   const paW = 340, paH = 105;
   const saW = 150, saH = 55;
   const goalW = 100, goalH = 14;
-
-  // Bottom (portero/defensa)
-  const paBottomX = cx - paW / 2;
-  const paBottomY = PY + PH - paH;
-  const saBottomX = cx - saW / 2;
-  const saBottomY = PY + PH - saH;
-  const penBottomY = PY + PH - 88;
-
-  // Top (ataque/delanteros)
-  const paTopX = cx - paW / 2;
-  const paTopY = PY;
-  const saTopX = cx - saW / 2;
-  const saTopY = PY;
-  const penTopY = PY + 88;
 
   return (
     <svg
@@ -51,41 +28,31 @@ function PitchSVG() {
       preserveAspectRatio="xMidYMid slice"
       style={{ borderRadius: 8 }}
     >
-      {/* Background */}
       <rect width="900" height="600" fill="#1A3A1A" />
 
       {/* Grass stripes */}
-      {stripes.map((s, i) => (
-        <rect key={i} x={PX} y={s.y} width={PW} height={stripeH + 0.5} fill={s.fill} />
+      {Array.from({ length: 10 }, (_, i) => (
+        <rect key={i} x={PX} y={PY + i * stripeH} width={PW} height={stripeH + 0.5}
+          fill={i % 2 === 0 ? '#2D5A27' : '#3A7D32'} />
       ))}
 
-      {/* Lines */}
+      {/* Field lines */}
       <g stroke="#FFFFFF" strokeWidth="1.8" fill="none" opacity="0.85">
-        {/* Outer boundary */}
         <rect x={PX} y={PY} width={PW} height={PH} />
-
-        {/* Halfway line */}
         <line x1={PX} y1={midY} x2={PX + PW} y2={midY} />
-
-        {/* Center circle + dot */}
         <circle cx={cx} cy={midY} r={52} />
         <circle cx={cx} cy={midY} r={3} fill="#FFFFFF" stroke="none" />
 
-        {/* ── Bottom (portero) area ── */}
-        <rect x={paBottomX} y={paBottomY} width={paW} height={paH} />
-        <rect x={saBottomX} y={saBottomY} width={saW} height={saH} />
-        <circle cx={cx} cy={penBottomY} r={3} fill="#FFFFFF" stroke="none" />
-        {/* Penalty arc */}
-        <path
-          d={`M ${paBottomX} ${paBottomY} A 55 55 0 0 0 ${paBottomX + paW} ${paBottomY}`}
-          strokeDasharray="0"
-          fill="none"
-        />
+        {/* Bottom (portero) */}
+        <rect x={cx - paW / 2} y={PY + PH - paH} width={paW} height={paH} />
+        <rect x={cx - saW / 2} y={PY + PH - saH} width={saW} height={saH} />
+        <circle cx={cx} cy={PY + PH - 88} r={3} fill="#FFFFFF" stroke="none" />
+        <path d={`M ${cx - paW / 2} ${PY + PH - paH} A 55 55 0 0 0 ${cx + paW / 2} ${PY + PH - paH}`} />
 
-        {/* ── Top (ataque) area ── */}
-        <rect x={paTopX} y={paTopY} width={paW} height={paH} />
-        <rect x={saTopX} y={saTopY} width={saW} height={saH} />
-        <circle cx={cx} cy={penTopY} r={3} fill="#FFFFFF" stroke="none" />
+        {/* Top (ataque) */}
+        <rect x={cx - paW / 2} y={PY} width={paW} height={paH} />
+        <rect x={cx - saW / 2} y={PY} width={saW} height={saH} />
+        <circle cx={cx} cy={PY + 88} r={3} fill="#FFFFFF" stroke="none" />
 
         {/* Corner arcs */}
         <path d={`M ${PX} ${PY + 12} A 12 12 0 0 1 ${PX + 12} ${PY}`} />
@@ -94,49 +61,60 @@ function PitchSVG() {
         <path d={`M ${PX + PW - 12} ${PY + PH} A 12 12 0 0 0 ${PX + PW} ${PY + PH - 12}`} />
       </g>
 
-      {/* Goals (porterías) — rendered outside pitch lines as reference */}
-      <g fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2">
-        {/* Bottom goal */}
+      {/* Goals */}
+      <g fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.8">
         <rect x={cx - goalW / 2} y={PY + PH} width={goalW} height={goalH} rx="2" />
-        {/* Top goal */}
         <rect x={cx - goalW / 2} y={PY - goalH} width={goalW} height={goalH} rx="2" />
       </g>
     </svg>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function FootballPitch({ alineacion }: Props) {
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
+  const [breathingIds, setBreathingIds] = useState<Set<number>>(new Set());
 
   const titulares = alineacion.filter(p => p.rol === 'Titular');
-  const coach = alineacion.find(p => p.rol === 'Profe');
-  const owner = alineacion.find(p => p.rol === 'Dueña del Club');
+  const coach     = alineacion.find(p => p.rol === 'Profe');
+  const owner     = alineacion.find(p => p.rol === 'Dueña del Club');
 
-  // Validate positions and warn on mismatches
   const playersOnPitch = titulares.map(player => {
     const pos = POSITION_MAP[player.posicionCancha];
-    if (!pos) {
-      console.warn(
-        `[FootballPitch] posicionCancha desconocida: "${player.posicionCancha}" para ${player.nombre}. ` +
-          `Usando fallback Portero.`
-      );
-    }
+    if (!pos) console.warn(`[FootballPitch] posicionCancha desconocida: "${player.posicionCancha}" para ${player.nombre}.`);
     return { player, pos: pos ?? POSITION_MAP['Portero'] };
   });
 
-  const handleActivate = (id: number) => setActivePlayerId(id);
+  // Idle breathing — cycles 2–3 random players every 4s
+  useEffect(() => {
+    if (playersOnPitch.length === 0) return;
+    const cycle = () => {
+      const count = Math.min(3, playersOnPitch.length);
+      const ids = playersOnPitch.map(p => p.player.id);
+      const chosen = new Set<number>();
+      while (chosen.size < count) {
+        chosen.add(ids[Math.floor(Math.random() * ids.length)]);
+      }
+      setBreathingIds(chosen);
+    };
+    cycle();
+    const interval = setInterval(cycle, 4000);
+    return () => clearInterval(interval);
+  }, [playersOnPitch.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleActivate   = (id: number) => setActivePlayerId(id);
   const handleDeactivate = () => setActivePlayerId(null);
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay: 0.55 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.08 }}
+      transition={{ duration: 0.6 }}
       className="w-full max-w-5xl mx-auto px-3 sm:px-6"
     >
-      {/* ── Título ── */}
+      {/* Título */}
       <h2
         className="text-center mb-4"
         style={{
@@ -152,16 +130,15 @@ export function FootballPitch({ alineacion }: Props) {
         ⚽ La Selección SPI
       </h2>
 
-      {/* ── Owner: centrado encima de todo ── */}
+      {/* OwnerBadge — centrada arriba */}
       {owner && (
         <div className="flex justify-center mb-4">
           <OwnerBadge owner={owner} />
         </div>
       )}
 
-      {/* ── Fila principal: Coach | Cancha ── */}
+      {/* Fila: CoachBadge | Cancha */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-        {/* CoachBadge — a la izquierda en desktop, centrado arriba en mobile */}
         {coach && (
           <div className="flex-shrink-0 md:self-center">
             <CoachBadge coach={coach} />
@@ -174,11 +151,10 @@ export function FootballPitch({ alineacion }: Props) {
           style={{
             borderRadius: 12,
             border: '3px solid #1A3A1A',
-            boxShadow: '0 0 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,56,147,0.1)',
+            boxShadow: '0 0 40px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,56,147,0.08)',
             overflow: 'visible',
           }}
         >
-          {/* aspect-ratio 3:2 */}
           <div
             style={{
               position: 'relative',
@@ -189,6 +165,23 @@ export function FootballPitch({ alineacion }: Props) {
             }}
           >
             <PitchSVG />
+
+            {/* Grass shimmer overlay */}
+            <motion.div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(108deg, transparent 25%, rgba(255,255,255,0.025) 50%, transparent 75%)',
+                backgroundSize: '250% 100%',
+                pointerEvents: 'none',
+                zIndex: 1,
+                borderRadius: 8,
+                willChange: 'background-position',
+              }}
+              animate={{ backgroundPosition: ['250% 0%', '-250% 0%'] }}
+              transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
+            />
 
             {/* Jugadores */}
             {playersOnPitch.map(({ player, pos }, i) => (
@@ -206,6 +199,7 @@ export function FootballPitch({ alineacion }: Props) {
                   player={player}
                   index={i}
                   isActive={activePlayerId === player.id}
+                  isBreathing={breathingIds.has(player.id) && activePlayerId !== player.id}
                   onActivate={handleActivate}
                   onDeactivate={handleDeactivate}
                 />
@@ -216,10 +210,8 @@ export function FootballPitch({ alineacion }: Props) {
       </div>
 
       {/* Mensaje de refuerzo */}
-      <p
-        className="text-center mt-3 text-xs uppercase tracking-widest font-bold"
-        style={{ color: 'rgba(252,209,22,0.45)' }}
-      >
+      <p className="text-center mt-3 text-xs uppercase tracking-widest font-bold"
+        style={{ color: 'rgba(252,209,22,0.4)' }}>
         Todos en cancha · Todos titulares · 23/23
       </p>
     </motion.section>

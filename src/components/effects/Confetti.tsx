@@ -1,39 +1,57 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+type Shape = 'circle' | 'square' | 'tape';
 
 interface ConfettiPiece {
   id: number;
-  x: number;
+  startX: number;   // initial left% (near center, 35–65%)
+  driftX: number;   // horizontal drift in vw (-50 to +50)
   color: string;
   delay: number;
   duration: number;
-  size: number;
+  width: number;
+  height: number;
+  shape: Shape;
+  rotation: number;
+}
+
+const COLOMBIA_COLORS = ['#FCD116', '#003893', '#CE1126'];
+
+function generatePieces(count: number): ConfettiPiece[] {
+  return Array.from({ length: count }, (_, i) => {
+    const shape: Shape = (['circle', 'square', 'tape'] as Shape[])[i % 3];
+    const baseSize = 5 + Math.random() * 9;
+    return {
+      id: i,
+      startX: 35 + Math.random() * 30,
+      driftX: (Math.random() - 0.5) * 120,
+      color: COLOMBIA_COLORS[i % 3],
+      delay: Math.random() * 0.9,
+      duration: 2.4 + Math.random() * 1.6,
+      width: shape === 'tape' ? Math.max(3, baseSize * 0.4) : baseSize,
+      height: shape === 'tape' ? baseSize * 2.2 : baseSize,
+      shape,
+      rotation: (Math.random() - 0.5) * 900,
+    };
+  });
+}
+
+function borderRadius(shape: Shape) {
+  if (shape === 'circle') return '50%';
+  if (shape === 'tape') return '1px';
+  return '2px';
 }
 
 interface Props {
   show: boolean;
 }
 
-const COLORS = ['#FCD116', '#003893', '#CE1126', '#FFFFFF', '#FFD700'];
-
-function generatePieces(count: number): ConfettiPiece[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: i,
-    x: Math.random() * 100,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    delay: Math.random() * 1.5,
-    duration: 2 + Math.random() * 2,
-    size: 6 + Math.random() * 8,
-  }));
-}
-
-export function Confetti({ show }: Props) {
-  const piecesRef = useRef<ConfettiPiece[]>(generatePieces(40));
+export const Confetti = memo(function Confetti({ show }: Props) {
+  const piecesRef = useRef<ConfettiPiece[]>(generatePieces(60));
 
   useEffect(() => {
-    if (show) {
-      piecesRef.current = generatePieces(40);
-    }
+    if (show) piecesRef.current = generatePieces(60);
   }, [show]);
 
   return (
@@ -43,30 +61,33 @@ export function Confetti({ show }: Props) {
           {piecesRef.current.map((piece) => (
             <motion.div
               key={piece.id}
-              initial={{
-                x: `${piece.x}vw`,
-                y: '-5vh',
-                rotate: 0,
-                opacity: 1,
+              style={{
+                position: 'absolute',
+                left: `${piece.startX}%`,
+                top: 0,
+                width: piece.width,
+                height: piece.height,
+                borderRadius: borderRadius(piece.shape),
+                background: piece.color,
+                willChange: 'transform, opacity',
               }}
+              initial={{ y: '-8vh', x: '0vw', rotate: 0, opacity: 1 }}
               animate={{
-                y: '110vh',
-                rotate: 360 + Math.random() * 360,
-                opacity: [1, 1, 0],
+                y: '115vh',
+                x: `${piece.driftX}vw`,
+                rotate: piece.rotation,
+                opacity: [1, 1, 1, 0],
               }}
               transition={{
                 duration: piece.duration,
                 delay: piece.delay,
-                ease: 'easeIn',
-              }}
-              className="absolute"
-              style={{
-                width: piece.size,
-                height: piece.size,
-                borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-                background: piece.color,
-                top: 0,
-                left: 0,
+                ease: [0.08, 0.3, 0.8, 1],
+                opacity: {
+                  duration: piece.duration,
+                  times: [0, 0.5, 0.78, 1],
+                  ease: 'linear',
+                  delay: piece.delay,
+                },
               }}
             />
           ))}
@@ -74,4 +95,4 @@ export function Confetti({ show }: Props) {
       )}
     </AnimatePresence>
   );
-}
+});

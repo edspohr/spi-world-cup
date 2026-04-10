@@ -42,7 +42,7 @@ export const MONTHS_TO_MINUTES: Record<string, number> = {
 };
 
 export const CURRENT_MONTH = 'Abril';
-export const CURRENT_YEAR = 2025;
+export const CURRENT_YEAR = 2026;
 
 export const POSITION_MAP: Record<string, { x: string; y: string }> = {
   Portero:                    { x: '50%', y: '92%' },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { COLORS } from '../../utils/constants';
 
 interface Props {
@@ -17,7 +17,7 @@ function transformDriveUrl(url: string): string {
   return url;
 }
 
-export function PlayerImage({ urlFoto, numero, nombre, size }: Props) {
+export const PlayerImage = memo(function PlayerImage({ urlFoto, numero, nombre, size }: Props) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>(
     urlFoto ? 'loading' : 'error'
   );
@@ -80,6 +80,7 @@ export function PlayerImage({ urlFoto, numero, nombre, size }: Props) {
       <img
         src={transformedUrl}
         alt={nombre}
+        loading="lazy"
         onLoad={() => setStatus('loaded')}
         onError={() => setStatus('error')}
         style={{
@@ -92,4 +93,4 @@ export function PlayerImage({ urlFoto, numero, nombre, size }: Props) {
       />
     </div>
   );
-}
+});

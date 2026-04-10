@@ -33,7 +33,7 @@ export function Header() {
             </h1>
             <p className="text-sm font-bold tracking-[0.3em] uppercase mt-0.5"
                style={{ color: '#FFFFFF', opacity: 0.85 }}>
-              2025 — SPI Americas
+              2026 — SPI Americas
             </p>
           </div>
 

@@ -185,7 +185,7 @@ export function MainScoreboard({ marcadorGlobal, resultados }: Props) {
             className="text-[10px] font-bold tracking-[0.2em] uppercase"
             style={{ color: COLORS.gold, fontFamily: "'Oswald', sans-serif" }}
           >
-            Copa SPI 2025 · Marcador Global
+            Copa SPI 2026 · Marcador Global
           </span>
           <span className="text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,0.4)' }}>
             {mesesCerrados} / 12 meses cerrados
@@ -335,12 +335,32 @@ export function MainScoreboard({ marcadorGlobal, resultados }: Props) {
             </span>
           ) : (
             <div className="flex items-center gap-2">
-              <motion.div
-                animate={{ opacity: [1, 0.2, 1], scale: [1, 1.4, 1] }}
-                transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-2 h-2 rounded-full"
-                style={{ background: '#ef4444' }}
-              />
+              {/* Broadcast rings */}
+              <div className="relative flex items-center justify-center" style={{ width: 20, height: 20 }}>
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute rounded-full"
+                    style={{
+                      width: 8, height: 8,
+                      border: '1.5px solid #ef4444',
+                    }}
+                    animate={{ scale: [1, 3.2], opacity: [0.7, 0] }}
+                    transition={{
+                      duration: 1.8,
+                      delay: i * 0.6,
+                      repeat: Infinity,
+                      ease: 'easeOut',
+                    }}
+                  />
+                ))}
+                <motion.div
+                  animate={{ opacity: [1, 0.3, 1] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: '#ef4444', position: 'relative', zIndex: 1 }}
+                />
+              </div>
               <span
                 className="text-xs font-bold tracking-[0.25em] uppercase"
                 style={{ color: '#ef4444', fontFamily: "'Oswald', sans-serif" }}
@@ -348,7 +368,7 @@ export function MainScoreboard({ marcadorGlobal, resultados }: Props) {
                 EN VIVO
               </span>
               <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                · Temporada 2025
+                · Temporada 2026
               </span>
             </div>
           )}

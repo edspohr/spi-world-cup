@@ -29,7 +29,7 @@ export function Footer() {
             <div className="flex-1" style={{ background: '#CE1126' }} />
           </div>
           <p className="text-xs font-mono" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            v1.0.0
+            v1.0.0 — Temporada 2026
           </p>
         </div>
       </div>
