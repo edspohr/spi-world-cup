@@ -21,16 +21,16 @@ function useResponsiveSize() {
   const [size, setSize] = useState(() => {
     if (typeof window === 'undefined') return { circle: 44, badge: 18 };
     const w = window.innerWidth;
-    if (w >= 1024) return { circle: 72, badge: 24 };
-    if (w >= 768) return { circle: 56, badge: 20 };
-    return { circle: 40, badge: 16 };
+    if (w >= 1024) return { circle: 62, badge: 22 };
+    if (w >= 768) return { circle: 48, badge: 18 };
+    return { circle: 38, badge: 16 };
   });
   useEffect(() => {
     const fn = () => {
       const w = window.innerWidth;
-      if (w >= 1024) setSize({ circle: 72, badge: 24 });
-      else if (w >= 768) setSize({ circle: 56, badge: 20 });
-      else setSize({ circle: 40, badge: 16 });
+      if (w >= 1024) setSize({ circle: 62, badge: 22 });
+      else if (w >= 768) setSize({ circle: 48, badge: 18 });
+      else setSize({ circle: 38, badge: 16 });
     };
     window.addEventListener('resize', fn, { passive: true });
     return () => window.removeEventListener('resize', fn);
@@ -101,7 +101,7 @@ export const PlayerCard = memo(function PlayerCard({
 }: Props) {
   const isMobile = useIsMobile();
   const { circle: circleSize, badge: badgeSize } = useResponsiveSize();
-  const isDesktop = circleSize >= 72;
+  const isDesktop = circleSize >= 62;
   const cardRef   = useRef<HTMLDivElement>(null);
   const circleRef = useRef<HTMLDivElement>(null);
   const [fixedPos, setFixedPos] = useState<FixedPos | null>(null);
@@ -325,7 +325,8 @@ export const PlayerCard = memo(function PlayerCard({
             }}>
               <span style={{
                 fontFamily: 'Oswald, sans-serif', fontWeight: 700,
-                fontSize: badgeSize * 0.5, color: '#FFFFFF', lineHeight: 1,
+                fontSize: badgeSize >= 22 ? 10 : badgeSize >= 18 ? 8 : 7,
+                color: '#FFFFFF', lineHeight: 1,
               }}>
                 {player.numero}
               </span>

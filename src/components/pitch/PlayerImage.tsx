@@ -1,4 +1,4 @@
-import { memo, useState, useMemo } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 import { COLORS } from '../../utils/constants';
 
 interface Props {
@@ -8,54 +8,43 @@ interface Props {
   size: number;
 }
 
-/**
- * Google Drive photo URL strategy (in order of reliability):
- * 1. Thumbnail endpoint — works for publicly shared files, no CORS issues
- * 2. lh3.googleusercontent.com — sometimes works for Google Workspace files
- * 3. /uc?export=view — classic export, often blocked by virus scan interstitial
- * 4. Fallback: player number on blue background
- *
- * IMPORTANTE: Todas las fotos en el Google Sheet deben compartirse como
- * "Cualquier persona con el enlace puede ver" en Google Drive.
- */
-function extractDriveFileId(url: string): string | null {
-  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) return match[1];
-  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (idMatch) return idMatch[1];
-  return null;
-}
-
-function buildDriveUrls(originalUrl: string): string[] {
-  if (!originalUrl) return [];
-
-  // Si no es una URL de Google Drive, usarla directamente
-  if (!originalUrl.includes('drive.google.com')) return [originalUrl];
-
-  const fileId = extractDriveFileId(originalUrl);
-  if (!fileId) return [originalUrl];
-
-  return [
-    `https://drive.google.com/thumbnail?id=${fileId}&sz=w200`,
-    `https://lh3.googleusercontent.com/d/${fileId}=w200`,
-    `https://drive.google.com/uc?export=view&id=${fileId}`,
-  ];
-}
-
 export const PlayerImage = memo(function PlayerImage({ urlFoto, numero, nombre, size }: Props) {
-  const urls = useMemo(() => buildDriveUrls(urlFoto), [urlFoto]);
-  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const currentUrl = urls[attempt];
-  const exhausted = !currentUrl || attempt >= urls.length;
+  const hasUrl = !!urlFoto && urlFoto.trim() !== '';
+  const showImage = hasUrl && !failed;
 
-  if (!urlFoto || exhausted) {
-    return (
+  // Reset states when URL changes
+  useEffect(() => {
+    setLoaded(false);
+    setFailed(false);
+  }, [urlFoto]);
+
+  // Timeout: si la imagen no carga en 5s, mostrar el número de respaldo
+  useEffect(() => {
+    if (!showImage || loaded) return;
+    timeoutRef.current = setTimeout(() => {
+      if (!loaded) setFailed(true);
+    }, 5000);
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [showImage, loaded, urlFoto]);
+
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%',
+      overflow: 'hidden', flexShrink: 0, position: 'relative',
+      background: COLORS.colombiaBlue,
+    }}>
+      {/* Número de respaldo — siempre renderizado como capa base */}
       <div style={{
-        width: size, height: size, borderRadius: '50%',
+        position: 'absolute', inset: 0, borderRadius: '50%',
         background: COLORS.colombiaBlue,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1,
+        opacity: loaded ? 0 : 1,
+        transition: 'opacity 0.3s ease-out',
       }}>
         <span style={{
           fontFamily: 'Oswald, sans-serif', fontWeight: 700,
@@ -64,40 +53,31 @@ export const PlayerImage = memo(function PlayerImage({ urlFoto, numero, nombre, 
           {numero}
         </span>
       </div>
-    );
-  }
 
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      overflow: 'hidden', flexShrink: 0, position: 'relative',
-      background: COLORS.colombiaBlue,
-    }}>
-      {!loaded && (
-        <div style={{
-          position: 'absolute', inset: 0, borderRadius: '50%',
-          background: 'linear-gradient(90deg, #1A2A4A 25%, #2A3A5A 50%, #1A2A4A 75%)',
-          backgroundSize: '200% 100%',
-          animation: 'pulse 1.5s infinite',
-        }} />
+      {/* Foto — se superpone encima, aparece con fade cuando carga */}
+      {showImage && (
+        <img
+          src={urlFoto}
+          alt={nombre}
+          loading="lazy"
+          onLoad={() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            setLoaded(true);
+          }}
+          onError={() => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            setFailed(true);
+          }}
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%', objectFit: 'cover',
+            borderRadius: '50%',
+            opacity: loaded ? 1 : 0,
+            transition: 'opacity 0.3s ease-in',
+            zIndex: 2,
+          }}
+        />
       )}
-      <img
-        src={currentUrl}
-        alt={nombre}
-        loading="lazy"
-        referrerPolicy="no-referrer"
-        crossOrigin="anonymous"
-        onLoad={() => setLoaded(true)}
-        onError={() => {
-          setLoaded(false);
-          setAttempt(prev => prev + 1);
-        }}
-        style={{
-          width: '100%', height: '100%', objectFit: 'cover',
-          borderRadius: '50%',
-          display: loaded ? 'block' : 'none',
-        }}
-      />
     </div>
   );
 });

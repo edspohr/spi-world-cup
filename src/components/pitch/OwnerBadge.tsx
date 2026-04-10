@@ -97,7 +97,7 @@ export function OwnerBadge({ owner }: Props) {
               flexShrink: 0,
             }}
           >
-            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={52} />
+            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={54} />
           </div>
 
           {/* Textos */}

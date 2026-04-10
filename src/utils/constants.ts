@@ -57,7 +57,7 @@ export const POSITION_MAP: Record<string, { x: string; y: string }> = {
   Mediocampo_OfensivoIzq:     { x: '25%', y: '52%' },
   Mediocampo_OfensivoCentro:  { x: '50%', y: '52%' },
   Mediocampo_OfensivoDer:     { x: '75%', y: '52%' },
-  Enganche_Libre:             { x: '50%', y: '46%' },
+  Enganche_Libre:             { x: '50%', y: '34%' },
   Enganche_Izq:               { x: '12%', y: '40%' },
   Enganche_CentroIzq:         { x: '37%', y: '40%' },
   Enganche_CentroDer:         { x: '63%', y: '40%' },

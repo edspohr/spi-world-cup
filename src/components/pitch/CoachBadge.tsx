@@ -76,7 +76,7 @@ export function CoachBadge({ coach }: Props) {
               lineHeight: 0,
             }}
           >
-            <PlayerImage urlFoto={coach.urlFoto} numero={coach.numero} nombre={coach.nombre} size={48} />
+            <PlayerImage urlFoto={coach.urlFoto} numero={coach.numero} nombre={coach.nombre} size={50} />
           </div>
 
           {/* Etiqueta DT */}
