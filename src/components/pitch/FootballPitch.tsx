@@ -10,6 +10,19 @@ interface Props {
   alineacion: Player[];
 }
 
+// Posiciones de desbordamiento para jugadores cuya Posicion_Cancha no esté en POSITION_MAP
+const OVERFLOW_POSITIONS: { x: string; y: string }[] = [
+  { x: '30%', y: '46%' },
+  { x: '70%', y: '46%' },
+  { x: '20%', y: '33%' },
+  { x: '80%', y: '33%' },
+  { x: '40%', y: '20%' },
+  { x: '60%', y: '20%' },
+  { x: '30%', y: '70%' },
+  { x: '70%', y: '70%' },
+  { x: '50%', y: '46%' },
+];
+
 // ── SVG Cancha (top-down, landscape 3:2) ──────────────────────────────────────
 const PitchSVG = memo(function PitchSVG() {
   const PX = 25, PY = 20, PW = 850, PH = 560;
@@ -80,10 +93,18 @@ export function FootballPitch({ alineacion }: Props) {
   const coach     = alineacion.find(p => p.rol === 'Profe');
   const owner     = alineacion.find(p => p.rol === 'Dueña del Club');
 
+  let overflowIndex = 0;
   const playersOnPitch = titulares.map(player => {
     const pos = POSITION_MAP[player.posicionCancha];
-    if (!pos) console.warn(`[FootballPitch] posicionCancha desconocida: "${player.posicionCancha}" para ${player.nombre}.`);
-    return { player, pos: pos ?? POSITION_MAP['Portero'] };
+    if (!pos) {
+      const slot = OVERFLOW_POSITIONS[overflowIndex % OVERFLOW_POSITIONS.length];
+      console.warn(
+        `[FootballPitch] Player "${player.nombre}" has unrecognized position '${player.posicionCancha}', assigned to overflow slot ${overflowIndex + 1}`
+      );
+      overflowIndex++;
+      return { player, pos: slot };
+    }
+    return { player, pos };
   });
 
   // Idle breathing — cycles 2–3 random players every 4s

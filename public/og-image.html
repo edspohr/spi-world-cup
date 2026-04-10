@@ -1,0 +1,154 @@
+<!doctype html>
+<!--
+  Referencia de diseño para og-image.png
+  Screenshot this page at exactly 1200×630 px and save as /public/og-image.png
+  Tools: browser DevTools device emulation → 1200×630, or:
+    npx playwright screenshot --viewport-size=1200,630 og-image.html og-image.png
+-->
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1200" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 1200px; height: 630px; overflow: hidden;
+      background: #0A1628;
+      font-family: 'Inter', sans-serif;
+      color: white;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+    /* Radial gradient background */
+    body::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(0,56,147,0.5) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(252,209,22,0.12) 0%, transparent 55%);
+    }
+    .content { position: relative; z-index: 1; text-align: center; width: 100%; padding: 0 80px; }
+
+    /* Tricolor bar */
+    .tricolor {
+      display: flex; width: 300px; height: 6px; border-radius: 3px; overflow: hidden;
+      margin: 0 auto 32px;
+    }
+    .tricolor div { flex: 1; }
+
+    /* Title */
+    .title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 72px; font-weight: 700; line-height: 1;
+      color: #FCD116;
+      text-shadow: 0 4px 20px rgba(252,209,22,0.4);
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-family: 'Oswald', sans-serif;
+      font-size: 28px; font-weight: 400; color: rgba(255,255,255,0.65);
+      letter-spacing: 4px; text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+
+    /* Score row */
+    .score-row {
+      display: flex; align-items: center; justify-content: center; gap: 48px;
+      margin-bottom: 48px;
+    }
+    .team {
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .shield {
+      width: 80px; height: 100px;
+    }
+    .team-name {
+      font-family: 'Oswald', sans-serif;
+      font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    }
+    .team-name.spi  { color: #FCD116; }
+    .team-name.ra   { color: #CE1126; }
+    .score {
+      font-family: 'Oswald', sans-serif;
+      font-size: 110px; font-weight: 700; line-height: 1;
+      color: white; letter-spacing: -4px;
+      display: flex; align-items: center; gap: 24px;
+    }
+    .score-sep { color: rgba(255,255,255,0.3); font-size: 80px; font-weight: 300; }
+
+    /* CTA */
+    .cta {
+      font-size: 22px; color: rgba(255,255,255,0.55);
+      font-style: italic; letter-spacing: 1px;
+    }
+    .cta strong { color: white; font-style: normal; }
+
+    /* Bottom gold line */
+    .gold-line {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, transparent, #FCD116 20%, #003893 50%, #CE1126 80%, transparent);
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div class="tricolor">
+      <div style="background:#FCD116"></div>
+      <div style="background:#003893"></div>
+      <div style="background:#CE1126"></div>
+    </div>
+
+    <p class="title">⚽ SPI World Cup 2026</p>
+    <p class="subtitle">Temporada en vivo</p>
+
+    <div class="score-row">
+      <!-- SPI Shield -->
+      <div class="team">
+        <svg class="shield" viewBox="0 0 64 80" fill="none">
+          <path d="M6 6 L58 6 L60 50 Q58 68 32 78 Q6 68 4 50 Z" fill="#003893"/>
+          <rect x="0" y="6" width="64" height="11" fill="#FCD116" clip-path="url(#cs)"/>
+          <rect x="0" y="17" width="64" height="9" fill="#003893" clip-path="url(#cs)"/>
+          <rect x="0" y="26" width="64" height="9" fill="#CE1126" clip-path="url(#cs)"/>
+          <rect x="0" y="35" width="64" height="50" fill="#003893" clip-path="url(#cs)"/>
+          <clipPath id="cs"><path d="M6 6 L58 6 L60 50 Q58 68 32 78 Q6 68 4 50 Z"/></clipPath>
+          <path d="M6 6 L58 6 L60 50 Q58 68 32 78 Q6 68 4 50 Z" fill="none" stroke="#FFD700" stroke-width="3"/>
+          <text x="32" y="60" text-anchor="middle" fill="#FFD700" font-family="Oswald,sans-serif" font-size="19" font-weight="700" letter-spacing="2">SPI</text>
+        </svg>
+        <span class="team-name spi">SPI Americas</span>
+      </div>
+
+      <!-- Score -->
+      <div class="score">
+        <span>1</span>
+        <span class="score-sep">–</span>
+        <span style="color:rgba(255,255,255,0.45)">2</span>
+      </div>
+
+      <!-- RA Shield -->
+      <div class="team">
+        <svg class="shield" viewBox="0 0 64 80" fill="none">
+          <defs>
+            <linearGradient id="ra-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6B0000"/>
+              <stop offset="100%" stop-color="#3D0000"/>
+            </linearGradient>
+          </defs>
+          <path d="M6 6 L58 6 L60 50 Q58 68 32 78 Q6 68 4 50 Z" fill="url(#ra-bg)"/>
+          <path d="M36 14 L23 39 L31 36 L25 58 L43 30 L35 33 L49 14 Z" fill="#CE1126" opacity="0.95"/>
+          <path d="M6 6 L58 6 L60 50 Q58 68 32 78 Q6 68 4 50 Z" fill="none" stroke="#CE1126" stroke-width="3"/>
+          <text x="32" y="73" text-anchor="middle" fill="rgba(255,120,120,0.9)" font-family="Oswald,sans-serif" font-size="11" font-weight="700" letter-spacing="2">RA</text>
+        </svg>
+        <span class="team-name ra">Real Adversidad</span>
+      </div>
+    </div>
+
+    <p class="cta">¡Sigue el marcador en vivo! <strong>spi-world-cup.vercel.app</strong></p>
+  </div>
+
+  <div class="gold-line"></div>
+</body>
+</html>
