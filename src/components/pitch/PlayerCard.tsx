@@ -17,6 +17,27 @@ function useIsMobile() {
   return mobile;
 }
 
+function useResponsiveSize() {
+  const [size, setSize] = useState(() => {
+    if (typeof window === 'undefined') return { circle: 44, badge: 18 };
+    const w = window.innerWidth;
+    if (w >= 1024) return { circle: 72, badge: 24 };
+    if (w >= 768) return { circle: 56, badge: 20 };
+    return { circle: 40, badge: 16 };
+  });
+  useEffect(() => {
+    const fn = () => {
+      const w = window.innerWidth;
+      if (w >= 1024) setSize({ circle: 72, badge: 24 });
+      else if (w >= 768) setSize({ circle: 56, badge: 20 });
+      else setSize({ circle: 40, badge: 16 });
+    };
+    window.addEventListener('resize', fn, { passive: true });
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return size;
+}
+
 interface Props {
   player: Player;
   index: number;
@@ -29,11 +50,12 @@ interface Props {
 interface FixedPos {
   top: number;
   left: number;
+  arrowLeft: number; // px offset from popover left edge for arrow
   arrowUp: boolean;
 }
 
-const POPOVER_W = 162;
-const POPOVER_H = 230;
+const POPOVER_W = 180;
+const POPOVER_H = 250;
 
 function PopoverContent({ player }: { player: Player }) {
   return (
@@ -78,6 +100,8 @@ export const PlayerCard = memo(function PlayerCard({
   onDeactivate,
 }: Props) {
   const isMobile = useIsMobile();
+  const { circle: circleSize, badge: badgeSize } = useResponsiveSize();
+  const isDesktop = circleSize >= 72;
   const cardRef   = useRef<HTMLDivElement>(null);
   const circleRef = useRef<HTMLDivElement>(null);
   const [fixedPos, setFixedPos] = useState<FixedPos | null>(null);
@@ -90,14 +114,32 @@ export const PlayerCard = memo(function PlayerCard({
     }
     if (!circleRef.current) return;
     const rect = circleRef.current.getBoundingClientRect();
-    const PAD = 10;
-    let left = rect.left + rect.width / 2 - POPOVER_W / 2;
-    let top  = rect.top - POPOVER_H - 10;
+    const PAD = 16;
+
+    // Default: popover above circle
+    let top = rect.top - POPOVER_H - 12;
     let arrowUp = false;
-    if (top < PAD) { top = rect.bottom + 10; arrowUp = true; }
+
+    // Flip below if not enough space above
+    if (top < PAD) {
+      top = rect.bottom + 12;
+      arrowUp = true;
+    }
+
+    // Horizontal: center on circle
+    let left = rect.left + rect.width / 2 - POPOVER_W / 2;
     if (left < PAD) left = PAD;
-    else if (left + POPOVER_W > window.innerWidth - PAD) left = window.innerWidth - PAD - POPOVER_W;
-    setFixedPos({ top, left, arrowUp });
+    else if (left + POPOVER_W > window.innerWidth - PAD) {
+      left = window.innerWidth - PAD - POPOVER_W;
+    }
+
+    // Arrow points to circle center — recompute after clamping
+    const circleCenterX = rect.left + rect.width / 2;
+    let arrowLeft = circleCenterX - left;
+    // Clamp arrow within popover bounds (12px from each edge)
+    arrowLeft = Math.max(12, Math.min(POPOVER_W - 12, arrowLeft));
+
+    setFixedPos({ top, left, arrowLeft, arrowUp });
   }, [isActive, isMobile]);
 
   // Click/touch outside (desktop only — mobile uses overlay)
@@ -200,14 +242,18 @@ export const PlayerCard = memo(function PlayerCard({
               <PopoverContent player={player} />
               {fixedPos.arrowUp ? (
                 <div style={{
-                  position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)',
+                  position: 'absolute', top: -6,
+                  left: fixedPos.arrowLeft,
+                  transform: 'translateX(-50%)',
                   width: 0, height: 0,
                   borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
                   borderBottom: '6px solid #FFD700',
                 }} />
               ) : (
                 <div style={{
-                  position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
+                  position: 'absolute', bottom: -6,
+                  left: fixedPos.arrowLeft,
+                  transform: 'translateX(-50%)',
                   width: 0, height: 0,
                   borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
                   borderTop: '6px solid #FFD700',
@@ -268,36 +314,41 @@ export const PlayerCard = memo(function PlayerCard({
                 lineHeight: 0,
               }}
             >
-              <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={44} />
+              <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={circleSize} />
             </div>
             {/* Número badge */}
             <div style={{
               position: 'absolute', top: -4, right: -4,
-              width: 18, height: 18, borderRadius: '50%',
+              width: badgeSize, height: badgeSize, borderRadius: '50%',
               background: COLORS.colombiaRed, border: '1.5px solid #0A1628',
               display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3,
             }}>
-              <span style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 8, color: '#FFFFFF', lineHeight: 1 }}>
+              <span style={{
+                fontFamily: 'Oswald, sans-serif', fontWeight: 700,
+                fontSize: badgeSize * 0.5, color: '#FFFFFF', lineHeight: 1,
+              }}>
                 {player.numero}
               </span>
             </div>
           </motion.div>
 
-          {/* Apodo — solo desktop */}
-          <p className="hidden sm:block" style={{
-            fontSize: 9,
-            color: '#FFFFFF',
-            textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
-            textAlign: 'center',
-            maxWidth: 52,
-            lineHeight: 1.1,
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}>
-            {player.apodo}
-          </p>
+          {/* Apodo — solo desktop (>= 1024px) */}
+          {isDesktop && (
+            <p style={{
+              fontSize: 9,
+              color: '#FFFFFF',
+              textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
+              textAlign: 'center',
+              maxWidth: 64,
+              lineHeight: 1.1,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {player.apodo}
+            </p>
+          )}
         </motion.div>
       </motion.div>
     </>

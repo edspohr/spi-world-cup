@@ -15,7 +15,7 @@ No test suite is configured yet. TypeScript type checking runs as part of `build
 
 ## Architecture
 
-Single-page React app that visualizes SPI Americas' annual revenue performance as a live football match (SPI Americas vs Real Adversidad). Each month = a "match minute" (Enero=8' through Diciembre=90'). Goles a favor = months above target.
+Single-page React app that visualizes SPI Americas' annual revenue performance as a live football match (SPI Americas vs Real Adversidad). Each month = a "match minute" (Enero=8' through Diciembre=90'). Goles a favor = months above target. Squad = 26 total (24 titulares on pitch + Profe + Dueña del Club off-pitch).
 
 **Data flow:**
 

@@ -73,6 +73,7 @@ const FALLBACK_DATA: MatchData = {
     { id: 23, nombre: "Jugador 23", apodo: "El Halcón",    numero: 23, urlFoto: "", posicionCancha: "Banca_9",                  rol: "Titular" },
     { id: 24, nombre: "Kique",      apodo: "El Profe",     numero: 99, urlFoto: "", posicionCancha: "Director_Tecnico",          rol: "Profe" },
     { id: 25, nombre: "Jeannine",   apodo: "La Patrona",   numero: 0,  urlFoto: "", posicionCancha: "Palco_VIP",                 rol: "Dueña del Club" },
+    { id: 26, nombre: "Jugadora 26", apodo: "La Estrella", numero: 26, urlFoto: "", posicionCancha: "Enganche_Libre",             rol: "Titular" },
   ],
   resultados: [
     { mes: "Enero",      status: "Cerrado",   golesAFavor: 0, golesEnContra: 1, highlight: "Inicio difícil, pero el equipo no baja los brazos" },
@@ -286,7 +287,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Fetch en paralelo de las dos tabs (excluye la fila de headers con A2:G)
     const [alineacionRows, resultadosRows] = await Promise.all([
-      fetchSheetTab('Alineacion', 'A2:G26'),
+      fetchSheetTab('Alineacion', 'A2:G27'),
       fetchSheetTab('Resultados_Mensuales', 'A2:F13'),
     ]);
 

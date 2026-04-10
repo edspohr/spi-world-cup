@@ -169,7 +169,7 @@ export function FootballPitch({ alineacion }: Props) {
       {/* Fila: CoachBadge | Cancha */}
       <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
         {coach && (
-          <div className="flex-shrink-0 md:self-center">
+          <div className="flex-shrink-0 md:self-center" style={{ minWidth: 150 }}>
             <CoachBadge coach={coach} />
           </div>
         )}
@@ -241,7 +241,7 @@ export function FootballPitch({ alineacion }: Props) {
       {/* Mensaje de refuerzo */}
       <p className="text-center mt-3 text-xs uppercase tracking-widest font-bold"
         style={{ color: 'rgba(252,209,22,0.4)' }}>
-        Todos en cancha · Todos titulares · 23/23
+        Todos en cancha · Todos titulares · 24/24
       </p>
     </motion.section>
   );

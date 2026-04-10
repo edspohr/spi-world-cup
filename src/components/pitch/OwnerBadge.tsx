@@ -52,7 +52,7 @@ export function OwnerBadge({ owner }: Props) {
       {/* Etiqueta VIP */}
       <p style={{
         color: 'rgba(252,209,22,0.65)',
-        fontSize: 9,
+        fontSize: 10,
         fontWeight: 800,
         letterSpacing: '0.2em',
         textTransform: 'uppercase',
@@ -83,7 +83,7 @@ export function OwnerBadge({ owner }: Props) {
             gap: 12,
             position: 'relative',
             zIndex: 1,
-            minWidth: 200,
+            minWidth: 220,
             boxShadow: `0 0 32px rgba(255,215,0,0.3), 0 4px 20px rgba(0,0,0,0.5)`,
           }}
         >
@@ -97,7 +97,7 @@ export function OwnerBadge({ owner }: Props) {
               flexShrink: 0,
             }}
           >
-            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={46} />
+            <PlayerImage urlFoto={owner.urlFoto} numero={owner.numero} nombre={owner.nombre} size={52} />
           </div>
 
           {/* Textos */}

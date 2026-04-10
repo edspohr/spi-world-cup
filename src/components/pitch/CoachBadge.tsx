@@ -20,7 +20,7 @@ export function CoachBadge({ coach }: Props) {
       {/* Etiqueta superior */}
       <p style={{
         color: 'rgba(252,209,22,0.55)',
-        fontSize: 9,
+        fontSize: 10,
         fontWeight: 800,
         letterSpacing: '0.15em',
         textTransform: 'uppercase',
@@ -76,7 +76,7 @@ export function CoachBadge({ coach }: Props) {
               lineHeight: 0,
             }}
           >
-            <PlayerImage urlFoto={coach.urlFoto} numero={coach.numero} nombre={coach.nombre} size={44} />
+            <PlayerImage urlFoto={coach.urlFoto} numero={coach.numero} nombre={coach.nombre} size={48} />
           </div>
 
           {/* Etiqueta DT */}
