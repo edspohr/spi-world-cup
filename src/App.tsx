@@ -6,12 +6,15 @@ import { Footer } from './components/layout/Footer';
 import { MainScoreboard } from './components/scoreboard/MainScoreboard';
 import { MonthTimeline } from './components/scoreboard/MonthTimeline';
 import { MatchMinute } from './components/scoreboard/MatchMinute';
+import { RecaudoChart } from './components/scoreboard/RecaudoChart';
+import { CommentaryTicker } from './components/scoreboard/CommentaryTicker';
 import { FootballPitch } from './components/pitch/FootballPitch';
 import { GoalAnimation } from './components/effects/GoalAnimation';
 import { Confetti } from './components/effects/Confetti';
 import { useMatchData } from './hooks/useMatchData';
 import { MonthResult } from './types';
 import { TEAM_NAMES } from './utils/constants';
+import { computeHonors } from './utils/honors';
 
 // ── Web Audio goal sounds ─────────────────────────────────────────────────────
 function playGoalSoundImpl(isAdversary: boolean) {
@@ -61,6 +64,18 @@ function LoadingScreen() {
       className="min-h-screen flex flex-col items-center justify-center gap-6"
       style={{ background: '#0A1628' }}
     >
+      <motion.img
+        src="/photos/logo.webp"
+        alt="SPI Americas"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          height: 'clamp(40px, 6vw, 60px)',
+          width: 'auto',
+          filter: 'drop-shadow(0 0 18px rgba(252,209,22,0.35))',
+        }}
+      />
       <div className="relative flex flex-col items-center" style={{ height: 100 }}>
         <motion.div
           animate={{ y: [0, -55, 0, -32, 0, -16, 0] }}
@@ -155,6 +170,7 @@ const SECTIONS = [
   { id: 'section-scoreboard', label: 'Marcador' },
   { id: 'section-timeline',   label: 'Timeline'  },
   { id: 'section-pitch',      label: 'Cancha'    },
+  { id: 'section-chart',      label: 'Recaudo'   },
 ];
 
 function SectionNav() {
@@ -303,6 +319,7 @@ interface GoalEvent {
 
 export default function App() {
   const { data, loading, error } = useMatchData();
+  const honors = data ? computeHonors(data.resultados) : { mvpPlayerId: null, enLlamasPlayerId: null, racha: 0, lastClosedMes: null };
 
   const [showGoalOverlay, setShowGoalOverlay] = useState(false);
   const [goalData, setGoalData]  = useState<GoalEvent>({ teamName: '', monthName: '', isAdversary: false });
@@ -518,6 +535,12 @@ export default function App() {
                 />
               </div>
 
+              <CommentaryTicker
+                spiGoles={data.marcadorGlobal.spiGoles}
+                realAdversidadGoles={data.marcadorGlobal.realAdversidadGoles}
+                resultados={data.resultados}
+              />
+
               <div id="section-timeline" className="w-full max-w-5xl mx-auto">
                 <MonthTimeline
                   resultados={data.resultados}
@@ -528,7 +551,18 @@ export default function App() {
               <SectionSeparator />
 
               <div id="section-pitch">
-                <FootballPitch alineacion={data.alineacion} />
+                <FootballPitch
+                  alineacion={data.alineacion}
+                  mvpPlayerId={honors.mvpPlayerId}
+                  enLlamasPlayerId={honors.enLlamasPlayerId}
+                  mvpMes={honors.lastClosedMes}
+                />
+              </div>
+
+              <SectionSeparator />
+
+              <div id="section-chart">
+                <RecaudoChart resultados={data.resultados} />
               </div>
 
               <Footer />

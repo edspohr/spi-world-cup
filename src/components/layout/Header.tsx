@@ -18,6 +18,20 @@ export function Header() {
           <div className="flex-1" style={{ background: '#CE1126' }} />
         </div>
 
+        {/* Logo SPI */}
+        <motion.img
+          src="/photos/logo.webp"
+          alt="SPI Americas"
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          style={{
+            height: 'clamp(48px, 7vw, 72px)',
+            width: 'auto',
+            filter: 'drop-shadow(0 2px 12px rgba(252,209,22,0.35))',
+          }}
+        />
+
         <div className="flex items-center gap-3">
           <motion.div
             animate={{ rotate: [0, -15, 15, -10, 10, 0] }}

@@ -8,6 +8,9 @@ import { POSITION_MAP } from '../../utils/constants';
 
 interface Props {
   alineacion: Player[];
+  mvpPlayerId?: number | null;
+  enLlamasPlayerId?: number | null;
+  mvpMes?: string | null;
 }
 
 // Posiciones de desbordamiento para jugadores cuya Posicion_Cancha no esté en POSITION_MAP
@@ -85,7 +88,7 @@ const PitchSVG = memo(function PitchSVG() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function FootballPitch({ alineacion }: Props) {
+export function FootballPitch({ alineacion, mvpPlayerId = null, enLlamasPlayerId = null, mvpMes = null }: Props) {
   const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
   const [breathingIds, setBreathingIds] = useState<Set<number>>(new Set());
 
@@ -231,6 +234,9 @@ export function FootballPitch({ alineacion }: Props) {
                   isBreathing={breathingIds.has(player.id) && activePlayerId !== player.id}
                   onActivate={handleActivate}
                   onDeactivate={handleDeactivate}
+                  isMvp={player.id === mvpPlayerId}
+                  isEnLlamas={player.id === enLlamasPlayerId}
+                  mvpMes={player.id === mvpPlayerId ? mvpMes : null}
                 />
               </div>
             ))}

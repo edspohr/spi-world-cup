@@ -45,6 +45,9 @@ interface Props {
   isBreathing?: boolean;
   onActivate: (id: number) => void;
   onDeactivate: () => void;
+  isMvp?: boolean;
+  isEnLlamas?: boolean;
+  mvpMes?: string | null;
 }
 
 interface FixedPos {
@@ -57,9 +60,50 @@ interface FixedPos {
 const POPOVER_W = 180;
 const POPOVER_H = 250;
 
-function PopoverContent({ player }: { player: Player }) {
+interface PopoverContentProps {
+  player: Player;
+  isMvp?: boolean;
+  isEnLlamas?: boolean;
+  mvpMes?: string | null;
+}
+
+function PopoverContent({ player, isMvp = false, isEnLlamas = false, mvpMes = null }: PopoverContentProps) {
   return (
     <>
+      {(isMvp || isEnLlamas) && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
+          {isMvp && (
+            <span style={{
+              background: 'rgba(255,215,0,0.18)',
+              border: '1px solid rgba(255,215,0,0.55)',
+              color: '#FFD700',
+              fontFamily: 'Oswald, sans-serif',
+              fontSize: 9,
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: 10,
+              letterSpacing: '0.08em',
+            }}>
+              👑 MVP{mvpMes ? ` · ${mvpMes.toUpperCase()}` : ''}
+            </span>
+          )}
+          {isEnLlamas && (
+            <span style={{
+              background: 'rgba(251,146,60,0.18)',
+              border: '1px solid rgba(251,146,60,0.6)',
+              color: '#FB923C',
+              fontFamily: 'Oswald, sans-serif',
+              fontSize: 9,
+              fontWeight: 700,
+              padding: '2px 6px',
+              borderRadius: 10,
+              letterSpacing: '0.08em',
+            }}>
+              🔥 EN LLAMAS
+            </span>
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
         <div style={{
           borderRadius: '50%',
@@ -98,6 +142,9 @@ export const PlayerCard = memo(function PlayerCard({
   isBreathing = false,
   onActivate,
   onDeactivate,
+  isMvp = false,
+  isEnLlamas = false,
+  mvpMes = null,
 }: Props) {
   const isMobile = useIsMobile();
   const { circle: circleSize, badge: badgeSize } = useResponsiveSize();
@@ -207,7 +254,7 @@ export const PlayerCard = memo(function PlayerCard({
                   background: 'rgba(255,255,255,0.2)',
                   margin: '0 auto 16px',
                 }} />
-                <PopoverContent player={player} />
+                <PopoverContent player={player} isMvp={isMvp} isEnLlamas={isEnLlamas} mvpMes={mvpMes} />
               </motion.div>
             </>
           )}
@@ -304,18 +351,65 @@ export const PlayerCard = memo(function PlayerCard({
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             style={{ position: 'relative', willChange: 'transform' }}
           >
+            {/* MVP halo pulsante */}
+            {isMvp && !isActive && (
+              <motion.div
+                aria-hidden
+                animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.15, 0.55] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  inset: -4,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0) 70%)',
+                  pointerEvents: 'none',
+                  willChange: 'transform, opacity',
+                }}
+              />
+            )}
+
+            {/* Corona MVP */}
+            {isMvp && (
+              <motion.div
+                aria-hidden
+                initial={{ y: 4, opacity: 0, rotate: -12 }}
+                animate={{ y: 0, opacity: 1, rotate: 0 }}
+                transition={{ delay: 0.4 + 0.04 * index, type: 'spring', stiffness: 240 }}
+                style={{
+                  position: 'absolute',
+                  top: -Math.round(circleSize * 0.38),
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: Math.round(circleSize * 0.44),
+                  lineHeight: 1,
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
+                  pointerEvents: 'none',
+                  zIndex: 4,
+                }}
+              >
+                👑
+              </motion.div>
+            )}
+
             <div
               ref={circleRef}
               style={{
                 borderRadius: '50%',
-                border: `2px solid ${COLORS.gold}`,
-                boxShadow: isActive ? `0 0 18px rgba(255,215,0,0.7)` : `0 0 8px rgba(255,215,0,0.3)`,
+                border: `${isMvp ? 2.5 : 2}px solid ${isMvp ? '#FFD700' : isEnLlamas ? '#FB923C' : COLORS.gold}`,
+                boxShadow: isActive
+                  ? '0 0 18px rgba(255,215,0,0.7)'
+                  : isMvp
+                  ? '0 0 14px rgba(255,215,0,0.85), 0 0 4px rgba(255,215,0,0.5) inset'
+                  : isEnLlamas
+                  ? '0 0 14px rgba(251,146,60,0.8)'
+                  : '0 0 8px rgba(255,215,0,0.3)',
                 overflow: 'hidden',
                 lineHeight: 0,
               }}
             >
               <PlayerImage urlFoto={player.urlFoto} numero={player.numero} nombre={player.nombre} size={circleSize} />
             </div>
+
             {/* Número badge */}
             <div style={{
               position: 'absolute', top: -4, right: -4,
@@ -331,6 +425,34 @@ export const PlayerCard = memo(function PlayerCard({
                 {player.numero}
               </span>
             </div>
+
+            {/* Fire badge "en llamas" */}
+            {isEnLlamas && (
+              <motion.div
+                aria-hidden
+                initial={{ scale: 0 }}
+                animate={{ scale: [1, 1.12, 1], rotate: [-6, 6, -6] }}
+                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  bottom: -4,
+                  left: -4,
+                  width: badgeSize,
+                  height: badgeSize,
+                  borderRadius: '50%',
+                  background: 'rgba(251,146,60,0.92)',
+                  border: '1.5px solid #0A1628',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 3,
+                  boxShadow: '0 0 10px rgba(251,146,60,0.7)',
+                  willChange: 'transform',
+                }}
+              >
+                <span style={{ fontSize: badgeSize * 0.58, lineHeight: 1 }}>🔥</span>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Apodo — solo desktop (>= 1024px) */}

@@ -14,6 +14,10 @@ export interface MonthResult {
   golesAFavor: number;
   golesEnContra: number;
   highlight: string;
+  /** % de cumplimiento vs. meta mensual. 100 = meta exacta. Undefined si pendiente. */
+  pctMeta?: number;
+  /** ID del titular MVP del mes (opcional, para crown + halo). */
+  mvpPlayerId?: number;
 }
 
 export interface MatchData {

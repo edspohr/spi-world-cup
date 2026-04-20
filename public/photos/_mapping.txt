@@ -1,0 +1,21 @@
+# Mapping original → slug (copiar a Google Sheet columna URL_Foto)
+# Generado: Sun Apr 19 22:33:48 -04 2026
+
+ALEJANDRO RINCÓN.JPG  →  /photos/alejandro-rincon.webp
+ANA DE LA OSSA.JPG  →  /photos/ana-de-la-ossa.webp
+CATALINA OSPINA.JPG  →  /photos/catalina-ospina.webp
+EDUARDO DORADO.JPG  →  /photos/eduardo-dorado.webp
+GLORIA PIRANEQUE.JPG  →  /photos/gloria-piraneque.webp
+LUISA PARRA.jpg  →  /photos/luisa-parra.webp
+MAGALI TRUJILLO.JPG  →  /photos/magali-trujillo.webp
+MARCELA RODRIGUEZ.JPG  →  /photos/marcela-rodriguez.webp
+MAURICIO CORTES.JPG  →  /photos/mauricio-cortes.webp
+SANDRA PRECIADO.JPG  →  /photos/sandra-preciado.webp
+CAROLINA SARMIENTO.jpeg  →  /photos/carolina-sarmiento.webp
+DANIELA RODRIGUEZ.jpeg  →  /photos/daniela-rodriguez.webp
+ISABEL SANÍN.jpeg  →  /photos/isabel-sanin.webp
+JULIANA GALLO BURAYE.jpeg  →  /photos/juliana-gallo-buraye.webp
+LEIDY MARÍN.jpeg  →  /photos/leidy-marin.webp
+MELANNY SANCHEZ.jpeg  →  /photos/melanny-sanchez.webp
+SHIRLEY DIAZ.jpeg  →  /photos/shirley-diaz.webp
+ALVARO RINCON.png  →  /photos/alvaro-rincon.webp

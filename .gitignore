@@ -3,3 +3,8 @@ dist/
 .env
 .env.local
 .vercel
+.DS_Store
+**/.DS_Store
+
+# Fotos originales pesadas (respaldo local) — sólo subimos las WebP optimizadas
+public/photos/original/

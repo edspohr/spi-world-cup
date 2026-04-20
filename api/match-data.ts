@@ -34,6 +34,8 @@ interface MonthResult {
   golesAFavor: number;
   golesEnContra: number;
   highlight: string;
+  pctMeta?: number;      // % cumplimiento meta (sin exponer USD)
+  mvpPlayerId?: number;  // ID del MVP del mes (columna G opcional del Sheet)
 }
 
 interface MatchData {
@@ -73,12 +75,12 @@ const FALLBACK_DATA: MatchData = {
     { id: 23, nombre: "Jugador 23", apodo: "El Halcón",    numero: 23, urlFoto: "", posicionCancha: "Banca_9",                  rol: "Titular" },
     { id: 24, nombre: "Kique",      apodo: "El Profe",     numero: 99, urlFoto: "", posicionCancha: "Director_Tecnico",          rol: "Profe" },
     { id: 25, nombre: "Jeannine",   apodo: "La Patrona",   numero: 0,  urlFoto: "", posicionCancha: "Palco_VIP",                 rol: "Dueña del Club" },
-    { id: 26, nombre: "Patricia Rincón", apodo: "La As Bajo la Manga", numero: 26, urlFoto: "/photos/26.jpg", posicionCancha: "Enganche_Libre", rol: "Titular" },
+    { id: 26, nombre: "Patricia Rincón", apodo: "La As Bajo la Manga", numero: 26, urlFoto: "", posicionCancha: "Enganche_Libre", rol: "Titular" },
   ],
   resultados: [
-    { mes: "Enero",      status: "Cerrado",   golesAFavor: 0, golesEnContra: 1, highlight: "Inicio difícil, pero el equipo no baja los brazos" },
-    { mes: "Febrero",    status: "Cerrado",   golesAFavor: 0, golesEnContra: 1, highlight: "Mes retador, se siente la presión del mercado" },
-    { mes: "Marzo",      status: "Cerrado",   golesAFavor: 1, golesEnContra: 0, highlight: "¡Gol de descuento! El equipo reacciona 💪" },
+    { mes: "Enero",      status: "Cerrado",   golesAFavor: 0, golesEnContra: 1, pctMeta: 88, highlight: "Inicio difícil, pero el equipo no baja los brazos" },
+    { mes: "Febrero",    status: "Cerrado",   golesAFavor: 0, golesEnContra: 1, pctMeta: 82, highlight: "Mes retador, se siente la presión del mercado" },
+    { mes: "Marzo",      status: "Cerrado",   golesAFavor: 1, golesEnContra: 0, pctMeta: 108, highlight: "¡Gol de descuento! El equipo reacciona 💪" },
     { mes: "Abril",      status: "Pendiente", golesAFavor: 0, golesEnContra: 0, highlight: "" },
     { mes: "Mayo",       status: "Pendiente", golesAFavor: 0, golesEnContra: 0, highlight: "" },
     { mes: "Junio",      status: "Pendiente", golesAFavor: 0, golesEnContra: 0, highlight: "" },
@@ -131,6 +133,14 @@ function calcularGoles(recaudo: number): { aFavor: number; enContra: number } {
     aFavor: 0,
     enContra: 1 + Math.floor((META_MENSUAL - recaudo) / 50_000),
   };
+}
+
+// Estimación de pctMeta cuando el Sheet trae goles hardcodeados sin USD.
+// Mantiene la narrativa visual del chart aunque el dato exacto no esté disponible.
+function estimarPctMetaDesdeGoles(aFavor: number, enContra: number): number {
+  if (aFavor > 0) return 100 + aFavor * 12;   // 1 gol=112%, 2=124%, 3=136%
+  if (enContra > 0) return 100 - enContra * 10; // 1 gol=90%, 2=80%, 3=70%
+  return 100;
 }
 
 // ---------------------------------------------------------------------------
@@ -205,8 +215,12 @@ function parseResultados(rows: string[][]): MonthResult[] {
     const status = rawStatus as 'Cerrado' | 'Pendiente';
     const highlight = row[5]?.trim() ?? '';
 
+    // Columna G (opcional): ID del MVP del mes
+    const rawMvp = row[6]?.trim();
+    const mvpPlayerId = rawMvp && !isNaN(parseInt(rawMvp, 10)) ? parseInt(rawMvp, 10) : undefined;
+
     if (status === 'Pendiente') {
-      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight });
+      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId });
       continue;
     }
 
@@ -216,30 +230,30 @@ function parseResultados(rows: string[][]): MonthResult[] {
     const golesFavorSheet  = rawGolesFavor  !== undefined && rawGolesFavor  !== '' ? parseFloat(rawGolesFavor)  : NaN;
     const golesContraSheet = rawGolesContra !== undefined && rawGolesContra !== '' ? parseFloat(rawGolesContra) : NaN;
 
-    if (!isNaN(golesFavorSheet) && golesFavorSheet >= 0 && !isNaN(golesContraSheet) && golesContraSheet >= 0) {
-      // Valores hardcodeados en el Sheet → usarlos directamente
-      resultados.push({
-        mes,
-        status,
-        golesAFavor: Math.floor(golesFavorSheet),
-        golesEnContra: Math.floor(golesContraSheet),
-        highlight,
-      });
-      continue;
-    }
-
-    // Calcular desde Recaudo_Real_USD
+    // Intentar leer recaudo USD — necesario para pctMeta exacto
     const rawRecaudo = row[2]?.trim() ?? '';
-    const recaudo = parseFloat(rawRecaudo.replace(/,/g, '')); // tolera "535,000"
+    const recaudoParsed = parseFloat(rawRecaudo.replace(/,/g, ''));
+    const tieneRecaudo = !isNaN(recaudoParsed);
 
-    if (isNaN(recaudo)) {
-      console.warn(`[Resultados] Fila ${i + 2} (${mes}): Recaudo "${rawRecaudo}" no numérico y sin goles hardcodeados. Se pone 0-0.`);
-      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight });
+    if (!isNaN(golesFavorSheet) && golesFavorSheet >= 0 && !isNaN(golesContraSheet) && golesContraSheet >= 0) {
+      const af = Math.floor(golesFavorSheet);
+      const ec = Math.floor(golesContraSheet);
+      const pctMeta = tieneRecaudo
+        ? Math.round((recaudoParsed / META_MENSUAL) * 100)
+        : estimarPctMetaDesdeGoles(af, ec);
+      resultados.push({ mes, status, golesAFavor: af, golesEnContra: ec, highlight, pctMeta, mvpPlayerId });
       continue;
     }
 
-    const { aFavor, enContra } = calcularGoles(recaudo);
-    resultados.push({ mes, status, golesAFavor: aFavor, golesEnContra: enContra, highlight });
+    if (!tieneRecaudo) {
+      console.warn(`[Resultados] Fila ${i + 2} (${mes}): Recaudo "${rawRecaudo}" no numérico y sin goles hardcodeados. Se pone 0-0.`);
+      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId });
+      continue;
+    }
+
+    const { aFavor, enContra } = calcularGoles(recaudoParsed);
+    const pctMeta = Math.round((recaudoParsed / META_MENSUAL) * 100);
+    resultados.push({ mes, status, golesAFavor: aFavor, golesEnContra: enContra, highlight, pctMeta, mvpPlayerId });
   }
 
   return resultados;
@@ -288,7 +302,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Fetch en paralelo de las dos tabs (excluye la fila de headers con A2:G)
     const [alineacionRows, resultadosRows] = await Promise.all([
       fetchSheetTab('Alineacion', 'A2:G27'),
-      fetchSheetTab('Resultados_Mensuales', 'A2:F13'),
+      fetchSheetTab('Resultados_Mensuales', 'A2:G13'),
     ]);
 
     const alineacion = parseAlineacion(alineacionRows);
