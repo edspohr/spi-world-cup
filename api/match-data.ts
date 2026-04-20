@@ -297,6 +297,13 @@ function buildMatchData(alineacion: Player[], resultados: MonthResult[]): MatchD
     }
   }
 
+  // Si hay un mes en curso (Pendiente con recaudo parcial), avanzar la pelota
+  // hasta su minuto para que la UI muestre "jugando <mes>".
+  const enCurso = resultados.find(r => r.status === 'Pendiente' && r.pctMeta !== undefined);
+  if (enCurso) {
+    minutoActual = MONTHS_TO_MINUTES[enCurso.mes] ?? minutoActual;
+  }
+
   return {
     alineacion,
     resultados,

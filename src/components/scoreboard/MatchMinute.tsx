@@ -53,9 +53,10 @@ function MonthTick({ mes, minuto, isCurrent }: { mes: string; minuto: number; is
 // Componente principal
 // ---------------------------------------------------------------------------
 export function MatchMinute({ minutoActual, resultados }: Props) {
-  // Derivar nombre del mes actual: último mes cerrado
+  // Mes actual: primer Pendiente con recaudo parcial (en curso), o último cerrado si no hay.
+  const inProgress = resultados.find(r => r.status === 'Pendiente' && r.pctMeta !== undefined);
   const lastClosed = [...resultados].reverse().find(r => r.status === 'Cerrado');
-  const mesActual = lastClosed?.mes ?? resultados[0]?.mes ?? 'Enero';
+  const mesActual = inProgress?.mes ?? lastClosed?.mes ?? resultados[0]?.mes ?? 'Enero';
 
   const pct = minutoActual > 0 ? (minutoActual / 90) * 100 : 0;
   const isMedioTiempo = minutoActual === 45;
@@ -155,7 +156,7 @@ export function MatchMinute({ minutoActual, resultados }: Props) {
               key={mes}
               mes={mes}
               minuto={minuto}
-              isCurrent={mes === mesActual && resultados.find(r => r.mes === mes)?.status === 'Cerrado'}
+              isCurrent={mes === mesActual}
             />
           ))}
 
