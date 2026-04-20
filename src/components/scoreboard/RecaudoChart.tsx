@@ -49,22 +49,20 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
     [resultados]
   );
 
-  // La línea conecta todos los meses con pctMeta (cerrados + mes en curso)
+  // Puntos con pctMeta (cerrados + mes en curso) — los dots del chart
   const linePoints = data.filter(d => d.pctMeta !== undefined);
-  const linePath = linePoints
+  // Línea sólida: sólo meses cerrados
+  const solidLinePoints = linePoints.filter(d => d.isClosed);
+  const solidLinePath = solidLinePoints
     .map((d, i) => `${i === 0 ? 'M' : 'L'} ${d.x} ${scaleY(d.pctMeta!)}`)
     .join(' ');
-  // Segmento entre último cerrado y mes en curso se pinta punteado (provisional)
-  const lastClosedPoint = linePoints.filter(d => d.isClosed).pop();
+  // Segmento punteado entre último cerrado y mes en curso (provisional)
+  const lastClosedPoint = solidLinePoints[solidLinePoints.length - 1];
   const inProgressPoint = linePoints.find(d => d.isInProgress);
   const provisionalPath =
     lastClosedPoint && inProgressPoint && lastClosedPoint.idx < inProgressPoint.idx
       ? `M ${lastClosedPoint.x} ${scaleY(lastClosedPoint.pctMeta!)} L ${inProgressPoint.x} ${scaleY(inProgressPoint.pctMeta!)}`
       : '';
-  const solidLinePoints = linePoints.filter(d => d.isClosed);
-  const solidLinePath = solidLinePoints
-    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${d.x} ${scaleY(d.pctMeta!)}`)
-    .join(' ');
 
   // Bars: golesAFavor sube, golesEnContra baja desde la línea de 100%
   const barWidth = 14;
