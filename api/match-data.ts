@@ -7,7 +7,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // Constantes privadas — NUNCA se exponen al frontend
 // ---------------------------------------------------------------------------
 const SHEET_ID = '1r7xQBfB4nr0LI3UjmZiJt1SoqZJIBzMxhutIDaDZ71c';
-const META_MENSUAL = 535_000; // USD — confidencial
+// Meta mensual en COP (535 millones). Confidencial — NUNCA se expone al frontend;
+// el cliente sólo recibe pctMeta (entero %).
+const META_MENSUAL = 535_000_000;
 
 const MONTHS_TO_MINUTES: Record<string, number> = {
   Enero: 8, Febrero: 15, Marzo: 23, Abril: 30,
@@ -122,16 +124,20 @@ async function fetchSheetTab(tabName: string, range: string): Promise<string[][]
 // ---------------------------------------------------------------------------
 // calcularGoles — lógica de negocio (META_MENSUAL es privada aquí)
 // ---------------------------------------------------------------------------
+// Thresholds en COP: cada gol adicional cuesta 100M a favor / 50M en contra.
+const THRESHOLD_GOL_A_FAVOR = 100_000_000;
+const THRESHOLD_GOL_EN_CONTRA = 50_000_000;
+
 function calcularGoles(recaudo: number): { aFavor: number; enContra: number } {
   if (recaudo >= META_MENSUAL) {
     return {
-      aFavor: 1 + Math.floor((recaudo - META_MENSUAL) / 100_000),
+      aFavor: 1 + Math.floor((recaudo - META_MENSUAL) / THRESHOLD_GOL_A_FAVOR),
       enContra: 0,
     };
   }
   return {
     aFavor: 0,
-    enContra: 1 + Math.floor((META_MENSUAL - recaudo) / 50_000),
+    enContra: 1 + Math.floor((META_MENSUAL - recaudo) / THRESHOLD_GOL_EN_CONTRA),
   };
 }
 
@@ -190,73 +196,89 @@ function parseAlineacion(rows: string[][]): Player[] {
 
 // ---------------------------------------------------------------------------
 // parseResultados
-// Columnas: Mes | Status | Recaudo_Real_USD | Goles_Favor | Goles_Contra | Highlight
+// Columnas: Mes | Status | Recaudo_Real_COP | Goles_Favor | Goles_Contra | Highlight | MVP_ID
+// Garantiza los 12 meses en orden — si el Sheet omite una fila o tiene Status
+// vacío, se emite Pendiente vacío (para que el timeline nunca tenga huecos).
 // ---------------------------------------------------------------------------
-function parseResultados(rows: string[][]): MonthResult[] {
-  const resultados: MonthResult[] = [];
+const MESES_ORDEN = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+function parseResultadoRow(row: string[], fila: number): MonthResult | null {
+  if (row.length < 1) return null;
+  const mes = row[0]?.trim() ?? '';
+  if (!mes) return null;
 
-    // Mínimo: Mes y Status son obligatorios
-    if (row.length < 2) {
-      console.warn(`[Resultados] Fila ${i + 2} incompleta (${row.length} cols), se omite.`);
-      continue;
+  const rawStatus = row[1]?.trim() ?? '';
+  // Tolerante: status vacío o desconocido → Pendiente. Sólo 'Cerrado' cierra el mes.
+  const status: 'Cerrado' | 'Pendiente' = rawStatus === 'Cerrado' ? 'Cerrado' : 'Pendiente';
+
+  const highlight = row[5]?.trim() ?? '';
+  const rawMvp = row[6]?.trim();
+  const mvpPlayerId = rawMvp && !isNaN(parseInt(rawMvp, 10)) ? parseInt(rawMvp, 10) : undefined;
+
+  // Tolera separadores colombianos ("535.000.000"), anglo ("535,000,000") o limpio ("535000000").
+  // Asume que el número nunca tiene decimales (montos en pesos enteros).
+  const rawRecaudo = row[2]?.trim() ?? '';
+  const recaudo = parseFloat(rawRecaudo.replace(/[.,]/g, ''));
+  const tieneRecaudo = !isNaN(recaudo) && recaudo > 0;
+
+  const rawGolesFavor  = row[3]?.trim();
+  const rawGolesContra = row[4]?.trim();
+  const golesFavorSheet  = rawGolesFavor  !== undefined && rawGolesFavor  !== '' ? parseFloat(rawGolesFavor)  : NaN;
+  const golesContraSheet = rawGolesContra !== undefined && rawGolesContra !== '' ? parseFloat(rawGolesContra) : NaN;
+  const tieneGolesHardcoded =
+    !isNaN(golesFavorSheet) && golesFavorSheet >= 0 &&
+    !isNaN(golesContraSheet) && golesContraSheet >= 0;
+
+  // Mes Pendiente — si tiene recaudo parcial, reportar pctMeta provisional (mes en curso)
+  if (status === 'Pendiente') {
+    if (tieneRecaudo) {
+      const pctMeta = Math.round((recaudo / META_MENSUAL) * 100);
+      return { mes, status, golesAFavor: 0, golesEnContra: 0, highlight, pctMeta, mvpPlayerId };
     }
-
-    const mes = row[0]?.trim() ?? '';
-    const rawStatus = row[1]?.trim();
-
-    if (!mes || (rawStatus !== 'Cerrado' && rawStatus !== 'Pendiente')) {
-      console.warn(`[Resultados] Fila ${i + 2}: Mes="${mes}" Status="${rawStatus}" inválidos, se omite.`);
-      continue;
-    }
-
-    const status = rawStatus as 'Cerrado' | 'Pendiente';
-    const highlight = row[5]?.trim() ?? '';
-
-    // Columna G (opcional): ID del MVP del mes
-    const rawMvp = row[6]?.trim();
-    const mvpPlayerId = rawMvp && !isNaN(parseInt(rawMvp, 10)) ? parseInt(rawMvp, 10) : undefined;
-
-    if (status === 'Pendiente') {
-      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId });
-      continue;
-    }
-
-    // Status === 'Cerrado': revisar si hay goles hardcodeados
-    const rawGolesFavor  = row[3]?.trim();
-    const rawGolesContra = row[4]?.trim();
-    const golesFavorSheet  = rawGolesFavor  !== undefined && rawGolesFavor  !== '' ? parseFloat(rawGolesFavor)  : NaN;
-    const golesContraSheet = rawGolesContra !== undefined && rawGolesContra !== '' ? parseFloat(rawGolesContra) : NaN;
-
-    // Intentar leer recaudo USD — necesario para pctMeta exacto
-    const rawRecaudo = row[2]?.trim() ?? '';
-    const recaudoParsed = parseFloat(rawRecaudo.replace(/,/g, ''));
-    const tieneRecaudo = !isNaN(recaudoParsed);
-
-    if (!isNaN(golesFavorSheet) && golesFavorSheet >= 0 && !isNaN(golesContraSheet) && golesContraSheet >= 0) {
-      const af = Math.floor(golesFavorSheet);
-      const ec = Math.floor(golesContraSheet);
-      const pctMeta = tieneRecaudo
-        ? Math.round((recaudoParsed / META_MENSUAL) * 100)
-        : estimarPctMetaDesdeGoles(af, ec);
-      resultados.push({ mes, status, golesAFavor: af, golesEnContra: ec, highlight, pctMeta, mvpPlayerId });
-      continue;
-    }
-
-    if (!tieneRecaudo) {
-      console.warn(`[Resultados] Fila ${i + 2} (${mes}): Recaudo "${rawRecaudo}" no numérico y sin goles hardcodeados. Se pone 0-0.`);
-      resultados.push({ mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId });
-      continue;
-    }
-
-    const { aFavor, enContra } = calcularGoles(recaudoParsed);
-    const pctMeta = Math.round((recaudoParsed / META_MENSUAL) * 100);
-    resultados.push({ mes, status, golesAFavor: aFavor, golesEnContra: enContra, highlight, pctMeta, mvpPlayerId });
+    return { mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId };
   }
 
-  return resultados;
+  // Mes Cerrado
+  if (tieneGolesHardcoded) {
+    const af = Math.floor(golesFavorSheet);
+    const ec = Math.floor(golesContraSheet);
+    const pctMeta = tieneRecaudo
+      ? Math.round((recaudo / META_MENSUAL) * 100)
+      : estimarPctMetaDesdeGoles(af, ec);
+    return { mes, status, golesAFavor: af, golesEnContra: ec, highlight, pctMeta, mvpPlayerId };
+  }
+
+  if (!tieneRecaudo) {
+    console.warn(`[Resultados] Fila ${fila} (${mes}): sin recaudo ni goles hardcodeados. 0-0.`);
+    return { mes, status, golesAFavor: 0, golesEnContra: 0, highlight, mvpPlayerId };
+  }
+
+  const { aFavor, enContra } = calcularGoles(recaudo);
+  const pctMeta = Math.round((recaudo / META_MENSUAL) * 100);
+  return { mes, status, golesAFavor: aFavor, golesEnContra: enContra, highlight, pctMeta, mvpPlayerId };
+}
+
+function parseResultados(rows: string[][]): MonthResult[] {
+  const byMes = new Map<string, MonthResult>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const parsed = parseResultadoRow(rows[i], i + 2);
+    if (parsed) byMes.set(parsed.mes, parsed);
+  }
+
+  // Garantizar los 12 meses en orden. Faltantes → Pendiente vacío.
+  return MESES_ORDEN.map(mes =>
+    byMes.get(mes) ?? {
+      mes,
+      status: 'Pendiente' as const,
+      golesAFavor: 0,
+      golesEnContra: 0,
+      highlight: '',
+    }
+  );
 }
 
 // ---------------------------------------------------------------------------

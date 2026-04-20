@@ -47,6 +47,60 @@ function getCardStyle(result: MonthResult, isCurrentMonth: boolean) {
   return { bg: COLORS.drawBlueBg, border: COLORS.drawBlueBorder, borderStyle: 'solid' as const, labelColor: '#93c5fd', numberColor: '#60a5fa' };
 }
 
+function InProgressBlock({ pctMeta }: { pctMeta: number }) {
+  const clamped = Math.max(0, Math.min(150, pctMeta));
+  const onTrack = pctMeta >= 100;
+  const color = onTrack ? '#4ade80' : pctMeta >= 85 ? COLORS.colombiaYellow : '#f87171';
+  const ringPct = Math.min(clamped, 100); // la barra llena hasta 100% del círculo
+  return (
+    <div className="flex flex-col items-center justify-center gap-1 w-full">
+      <div className="relative" style={{ width: 52, height: 52 }}>
+        <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="4" />
+          <motion.circle
+            cx="26" cy="26" r="22"
+            fill="none"
+            stroke={color}
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={`${2 * Math.PI * 22}`}
+            initial={{ strokeDashoffset: 2 * Math.PI * 22 }}
+            animate={{ strokeDashoffset: 2 * Math.PI * 22 * (1 - ringPct / 100) }}
+            transition={{ duration: 1.1, ease: 'easeOut' }}
+            style={{ filter: `drop-shadow(0 0 4px ${color})` }}
+          />
+        </svg>
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column',
+        }}>
+          <span style={{
+            fontFamily: "'Oswald', sans-serif",
+            fontWeight: 700,
+            fontSize: pctMeta >= 100 ? 15 : 16,
+            color,
+            lineHeight: 1,
+          }}>
+            {pctMeta}%
+          </span>
+          <span style={{
+            fontSize: 7,
+            color: 'rgba(255,255,255,0.35)',
+            letterSpacing: '0.06em',
+          }}>
+            META
+          </span>
+        </div>
+      </div>
+      <p className="text-[9px] font-bold text-center uppercase tracking-widest mt-0.5"
+        style={{ color: COLORS.colombiaYellow, fontFamily: "'Oswald', sans-serif" }}>
+        En juego
+      </p>
+    </div>
+  );
+}
+
 function GoalIcons({ favor, contra }: { favor: number; contra: number }) {
   const max = 5;
   return (
@@ -176,13 +230,17 @@ const MonthCard = memo(function MonthCard({
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center gap-1 py-2">
           {isCurrentMonth ? (
-            <>
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="text-xl">⚽</motion.div>
-              <p className="text-[9px] font-bold text-center uppercase tracking-widest mt-1"
-                style={{ color: COLORS.colombiaYellow, fontFamily: "'Oswald', sans-serif" }}>
-                En juego
-              </p>
-            </>
+            result.pctMeta !== undefined ? (
+              <InProgressBlock pctMeta={result.pctMeta} />
+            ) : (
+              <>
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 8, repeat: Infinity, ease: 'linear' }} className="text-xl">⚽</motion.div>
+                <p className="text-[9px] font-bold text-center uppercase tracking-widest mt-1"
+                  style={{ color: COLORS.colombiaYellow, fontFamily: "'Oswald', sans-serif" }}>
+                  En juego
+                </p>
+              </>
+            )
           ) : (
             <>
               <Clock size={14} color="rgba(255,255,255,0.2)" />
@@ -196,9 +254,14 @@ const MonthCard = memo(function MonthCard({
 });
 
 export function MonthTimeline({ resultados, onReplay }: Props) {
-  let lastClosedIdx = -1;
-  resultados.forEach((r, i) => { if (r.status === 'Cerrado') lastClosedIdx = i; });
-  const currentMonthIdx = lastClosedIdx >= 0 && lastClosedIdx < 11 ? lastClosedIdx + 1 : -1;
+  // Mes en curso = primer Pendiente con pctMeta (recaudo parcial) — más confiable
+  // que "último cerrado + 1" cuando falta alguna fila.
+  let currentMonthIdx = resultados.findIndex(r => r.status === 'Pendiente' && r.pctMeta !== undefined);
+  if (currentMonthIdx === -1) {
+    let lastClosedIdx = -1;
+    resultados.forEach((r, i) => { if (r.status === 'Cerrado') lastClosedIdx = i; });
+    currentMonthIdx = lastClosedIdx >= 0 && lastClosedIdx < 11 ? lastClosedIdx + 1 : -1;
+  }
 
   const totalFavor  = resultados.reduce((s, r) => s + r.golesAFavor,  0);
   const totalContra = resultados.reduce((s, r) => s + r.golesEnContra, 0);

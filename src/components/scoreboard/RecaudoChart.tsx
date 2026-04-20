@@ -44,13 +44,25 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
         idx,
         x: scaleX(idx, resultados.length),
         isClosed: r.status === 'Cerrado',
+        isInProgress: r.status === 'Pendiente' && r.pctMeta !== undefined,
       })),
     [resultados]
   );
 
-  // Puntos de la línea %Meta sólo para meses cerrados
-  const linePoints = data.filter(d => d.isClosed && d.pctMeta !== undefined);
+  // La línea conecta todos los meses con pctMeta (cerrados + mes en curso)
+  const linePoints = data.filter(d => d.pctMeta !== undefined);
   const linePath = linePoints
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${d.x} ${scaleY(d.pctMeta!)}`)
+    .join(' ');
+  // Segmento entre último cerrado y mes en curso se pinta punteado (provisional)
+  const lastClosedPoint = linePoints.filter(d => d.isClosed).pop();
+  const inProgressPoint = linePoints.find(d => d.isInProgress);
+  const provisionalPath =
+    lastClosedPoint && inProgressPoint && lastClosedPoint.idx < inProgressPoint.idx
+      ? `M ${lastClosedPoint.x} ${scaleY(lastClosedPoint.pctMeta!)} L ${inProgressPoint.x} ${scaleY(inProgressPoint.pctMeta!)}`
+      : '';
+  const solidLinePoints = linePoints.filter(d => d.isClosed);
+  const solidLinePath = solidLinePoints
     .map((d, i) => `${i === 0 ? 'M' : 'L'} ${d.x} ${scaleY(d.pctMeta!)}`)
     .join(' ');
 
@@ -94,7 +106,7 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
         <LegendItem color={COLORS.colombiaYellow} label="% Meta" shape="line" />
         <LegendItem color="#16a34a" label="Goles a favor" shape="bar" />
         <LegendItem color="#dc2626" label="Goles en contra" shape="bar" />
-        <LegendItem color="rgba(22,163,74,0.18)" label="Zona meta (≥100%)" shape="zone" />
+        <LegendItem color={COLORS.colombiaYellow} label="Mes en curso" shape="pulse" />
       </div>
 
       <div
@@ -180,7 +192,9 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
           {data.map(d => {
             const x = d.x;
             if (!d.isClosed) {
-              // Placeholder tenue para meses pendientes
+              // Mes en curso: placeholder se maneja con el dot pulsante (abajo)
+              if (d.isInProgress) return null;
+              // Mes pendiente sin datos: mini dot sobre la línea de meta
               return (
                 <circle
                   key={d.mes}
@@ -222,9 +236,10 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
           })}
 
           {/* Línea %Meta + dots */}
-          {linePoints.length > 1 && (
+          {/* Línea sólida: meses cerrados */}
+          {solidLinePoints.length > 1 && (
             <path
-              d={linePath}
+              d={solidLinePath}
               fill="none"
               stroke="#FCD116"
               strokeWidth={2.5}
@@ -233,18 +248,52 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
               filter="url(#glow)"
             />
           )}
-          {linePoints.map(d => (
-            <circle
-              key={d.mes}
-              cx={d.x}
-              cy={scaleY(d.pctMeta!)}
-              r={hoverIdx === d.idx ? 6 : 4}
-              fill="#FCD116"
-              stroke="#0A1628"
+          {/* Segmento punteado: último cerrado → mes en curso (provisional) */}
+          {provisionalPath && (
+            <path
+              d={provisionalPath}
+              fill="none"
+              stroke="rgba(252,209,22,0.6)"
               strokeWidth={2}
-              style={{ transition: 'r 0.18s' }}
+              strokeDasharray="4 4"
+              strokeLinecap="round"
             />
-          ))}
+          )}
+          {/* Dots: cerrados sólidos, mes en curso pulsante */}
+          {linePoints.map(d => {
+            const cy = scaleY(d.pctMeta!);
+            if (d.isInProgress) {
+              return (
+                <g key={d.mes}>
+                  <circle cx={d.x} cy={cy} r={9} fill="rgba(252,209,22,0.2)">
+                    <animate attributeName="r" values="7;11;7" dur="1.8s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.8s" repeatCount="indefinite" />
+                  </circle>
+                  <circle
+                    cx={d.x}
+                    cy={cy}
+                    r={hoverIdx === d.idx ? 6 : 5}
+                    fill="#FCD116"
+                    stroke="#0A1628"
+                    strokeWidth={2}
+                    style={{ transition: 'r 0.18s' }}
+                  />
+                </g>
+              );
+            }
+            return (
+              <circle
+                key={d.mes}
+                cx={d.x}
+                cy={cy}
+                r={hoverIdx === d.idx ? 6 : 4}
+                fill="#FCD116"
+                stroke="#0A1628"
+                strokeWidth={2}
+                style={{ transition: 'r 0.18s' }}
+              />
+            );
+          })}
 
           {/* Hotzones invisibles para hover/touch */}
           {data.map(d => (
@@ -279,12 +328,13 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
           {/* X axis labels */}
           {data.map(d => {
             const isActive = hoverIdx === d.idx;
+            const hasData = d.isClosed || d.isInProgress;
             return (
               <text
                 key={d.mes}
                 x={d.x}
                 y={PAD_T + CHART_H + 18}
-                fill={isActive ? '#FCD116' : d.isClosed ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)'}
+                fill={isActive ? '#FCD116' : hasData ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.35)'}
                 fontSize={11}
                 fontFamily="Oswald, sans-serif"
                 fontWeight={isActive ? 700 : 500}
@@ -303,13 +353,13 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
               cx={d.x}
               cy={PAD_T + CHART_H + 32}
               r={2.5}
-              fill={d.isClosed ? '#FCD116' : 'rgba(255,255,255,0.25)'}
+              fill={d.isClosed ? '#FCD116' : d.isInProgress ? 'rgba(252,209,22,0.55)' : 'rgba(255,255,255,0.25)'}
             />
           ))}
         </svg>
 
         {/* Tooltip flotante */}
-        {hovered && hovered.isClosed && (
+        {hovered && (hovered.isClosed || hovered.isInProgress) && (
           <div
             style={{
               position: 'absolute',
@@ -333,6 +383,19 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
               marginBottom: 2,
             }}>
               {hovered.mes.toUpperCase()}
+              {hovered.isInProgress && (
+                <span style={{
+                  marginLeft: 6,
+                  fontSize: 9,
+                  padding: '1px 5px',
+                  borderRadius: 8,
+                  background: 'rgba(252,209,22,0.2)',
+                  color: '#FCD116',
+                  letterSpacing: '0.08em',
+                }}>
+                  EN CURSO
+                </span>
+              )}
             </p>
             <div style={{ display: 'flex', gap: 10, alignItems: 'baseline', marginBottom: 4 }}>
               <span style={{
@@ -343,14 +406,18 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
               }}>
                 {hovered.pctMeta}%
               </span>
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>de la meta</span>
+              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>
+                de la meta {hovered.isInProgress ? '(provisional)' : ''}
+              </span>
             </div>
-            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginBottom: 4 }}>
-              <span style={{ color: '#16a34a', fontWeight: 700 }}>{hovered.golesAFavor}</span>
-              {' · '}
-              <span style={{ color: '#dc2626', fontWeight: 700 }}>{hovered.golesEnContra}</span>
-              <span style={{ color: 'rgba(255,255,255,0.45)' }}> ({hovered.golesAFavor > hovered.golesEnContra ? 'victoria' : hovered.golesAFavor < hovered.golesEnContra ? 'derrota' : 'empate'})</span>
-            </p>
+            {hovered.isClosed && (
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', marginBottom: 4 }}>
+                <span style={{ color: '#16a34a', fontWeight: 700 }}>{hovered.golesAFavor}</span>
+                {' · '}
+                <span style={{ color: '#dc2626', fontWeight: 700 }}>{hovered.golesEnContra}</span>
+                <span style={{ color: 'rgba(255,255,255,0.45)' }}> ({hovered.golesAFavor > hovered.golesEnContra ? 'victoria' : hovered.golesAFavor < hovered.golesEnContra ? 'derrota' : 'empate'})</span>
+              </p>
+            )}
             {hovered.highlight && (
               <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', lineHeight: 1.3 }}>
                 "{hovered.highlight}"
@@ -368,7 +435,7 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
   );
 });
 
-function LegendItem({ color, label, shape }: { color: string; label: string; shape: 'line' | 'bar' | 'zone' }) {
+function LegendItem({ color, label, shape }: { color: string; label: string; shape: 'line' | 'bar' | 'zone' | 'pulse' }) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
       {shape === 'line' && (
@@ -382,6 +449,14 @@ function LegendItem({ color, label, shape }: { color: string; label: string; sha
           width: 14, height: 14,
           background: color, border: '1px dashed rgba(255,255,255,0.2)',
           borderRadius: 2,
+        }} />
+      )}
+      {shape === 'pulse' && (
+        <span style={{
+          width: 10, height: 10,
+          borderRadius: '50%',
+          background: color,
+          boxShadow: `0 0 0 3px rgba(252,209,22,0.25)`,
         }} />
       )}
       <span>{label}</span>
