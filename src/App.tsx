@@ -73,7 +73,17 @@ function LoadingScreen() {
         style={{
           height: 'clamp(40px, 6vw, 60px)',
           width: 'auto',
-          filter: 'drop-shadow(0 0 18px rgba(252,209,22,0.35))',
+          filter: [
+            'drop-shadow(1px 0 0 #fff)',
+            'drop-shadow(-1px 0 0 #fff)',
+            'drop-shadow(0 1px 0 #fff)',
+            'drop-shadow(0 -1px 0 #fff)',
+            'drop-shadow(2px 0 0 #fff)',
+            'drop-shadow(-2px 0 0 #fff)',
+            'drop-shadow(0 2px 0 #fff)',
+            'drop-shadow(0 -2px 0 #fff)',
+            'drop-shadow(0 0 16px rgba(252,209,22,0.35))',
+          ].join(' '),
         }}
       />
       <div className="relative flex flex-col items-center" style={{ height: 100 }}>

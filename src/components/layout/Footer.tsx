@@ -17,7 +17,12 @@ export function Footer() {
           <img
             src="/photos/logo.webp"
             alt="SPI Americas"
-            style={{ height: 28, width: 'auto', opacity: 0.9 }}
+            style={{
+              height: 28,
+              width: 'auto',
+              opacity: 0.95,
+              filter: 'drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff) drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)',
+            }}
           />
           <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.7)' }}>
             Powered by{' '}

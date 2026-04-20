@@ -58,13 +58,6 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
   const barWidth = 14;
   const y100 = scaleY(100);
 
-  // Extensión de la línea proyectada (guion) para meses pendientes — continúa desde último cerrado
-  const lastClosed = linePoints[linePoints.length - 1];
-  const projectedPath =
-    lastClosed && lastClosed.idx < data.length - 1
-      ? `M ${lastClosed.x} ${scaleY(lastClosed.pctMeta!)} L ${scaleX(data.length - 1, data.length)} ${y100}`
-      : '';
-
   const hovered = hoverIdx !== null ? data[hoverIdx] : null;
 
   return (
@@ -238,16 +231,6 @@ export const RecaudoChart = memo(function RecaudoChart({ resultados }: Props) {
               strokeLinecap="round"
               strokeLinejoin="round"
               filter="url(#glow)"
-            />
-          )}
-          {projectedPath && (
-            <path
-              d={projectedPath}
-              fill="none"
-              stroke="rgba(252,209,22,0.35)"
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-              strokeLinecap="round"
             />
           )}
           {linePoints.map(d => (

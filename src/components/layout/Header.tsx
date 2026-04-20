@@ -18,7 +18,7 @@ export function Header() {
           <div className="flex-1" style={{ background: '#CE1126' }} />
         </div>
 
-        {/* Logo SPI */}
+        {/* Logo SPI con contorno blanco para contraste */}
         <motion.img
           src="/photos/logo.webp"
           alt="SPI Americas"
@@ -28,7 +28,18 @@ export function Header() {
           style={{
             height: 'clamp(48px, 7vw, 72px)',
             width: 'auto',
-            filter: 'drop-shadow(0 2px 12px rgba(252,209,22,0.35))',
+            // 8 direcciones × 1px = outline blanco ~2.5px perceptual + sombra dorada suave
+            filter: [
+              'drop-shadow(1px 0 0 #fff)',
+              'drop-shadow(-1px 0 0 #fff)',
+              'drop-shadow(0 1px 0 #fff)',
+              'drop-shadow(0 -1px 0 #fff)',
+              'drop-shadow(2px 0 0 #fff)',
+              'drop-shadow(-2px 0 0 #fff)',
+              'drop-shadow(0 2px 0 #fff)',
+              'drop-shadow(0 -2px 0 #fff)',
+              'drop-shadow(0 2px 10px rgba(252,209,22,0.35))',
+            ].join(' '),
           }}
         />
 
