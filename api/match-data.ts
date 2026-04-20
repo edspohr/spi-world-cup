@@ -338,7 +338,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = buildMatchData(alineacion, resultados);
 
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+    // Cache corto para que fixes propaguen rápido al Town Hall.
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    res.setHeader('X-Api-Version', 'meta-cop-v2');
     res.status(200).json(data);
   } catch (err) {
     console.error('[match-data] Error al leer Google Sheets, usando fallback:', err);
