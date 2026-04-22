@@ -19,3 +19,8 @@ LEIDY MARÍN.jpeg  →  /photos/leidy-marin.webp
 MELANNY SANCHEZ.jpeg  →  /photos/melanny-sanchez.webp
 SHIRLEY DIAZ.jpeg  →  /photos/shirley-diaz.webp
 ALVARO RINCON.png  →  /photos/alvaro-rincon.webp
+Andrea Rodriguez.jpeg  →  /photos/andrea-rodriguez.webp
+Maria Fernanda Jimenez.jpeg  →  /photos/maria-fernanda-jimenez.webp
+Patricia Rincón.jpeg  →  /photos/patricia-rincon.webp
+Thaneshka King.jpg  →  /photos/thaneshka-king.webp
+YURI FIGUEROA.jpeg  →  /photos/yuri-figueroa.webp
