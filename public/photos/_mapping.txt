@@ -24,3 +24,4 @@ Maria Fernanda Jimenez.jpeg  →  /photos/maria-fernanda-jimenez.webp
 Patricia Rincón.jpeg  →  /photos/patricia-rincon.webp
 Thaneshka King.jpg  →  /photos/thaneshka-king.webp
 YURI FIGUEROA.jpeg  →  /photos/yuri-figueroa.webp
+Juan Felipe Quintero.jpg  →  /photos/juan-felipe-quintero.webp
