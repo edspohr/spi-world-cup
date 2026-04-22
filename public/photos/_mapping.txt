@@ -26,3 +26,4 @@ Thaneshka King.jpg  →  /photos/thaneshka-king.webp
 YURI FIGUEROA.jpeg  →  /photos/yuri-figueroa.webp
 Juan Felipe Quintero.jpg  →  /photos/juan-felipe-quintero.webp
 jeaninne-buraye.avif  →  /photos/jeannine-buraye.webp
+laura-arevalo.jpeg  →  /photos/laura-arevalo.webp
