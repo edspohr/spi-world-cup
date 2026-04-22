@@ -455,19 +455,23 @@ export const PlayerCard = memo(function PlayerCard({
             )}
           </motion.div>
 
-          {/* Apodo — solo desktop (>= 1024px) */}
+          {/* Apodo — solo desktop (>= 1024px). Hasta 2 líneas para no truncar apodos largos. */}
           {isDesktop && (
             <p style={{
               fontSize: 9,
               color: '#FFFFFF',
               textShadow: '0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.8)',
               textAlign: 'center',
-              maxWidth: 64,
+              maxWidth: 96,
               lineHeight: 1.1,
               fontWeight: 600,
-              whiteSpace: 'nowrap',
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              overflowWrap: 'break-word',
+              wordBreak: 'normal',
+              hyphens: 'auto',
             }}>
               {player.apodo}
             </p>
